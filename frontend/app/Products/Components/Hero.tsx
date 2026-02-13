@@ -41,12 +41,8 @@ export default function Hero() {
           loop={true}
           autoplay={{ delay: 6000, disableOnInteraction: false }}
           modules={[Navigation, Pagination, Mousewheel, Keyboard, Autoplay]}
-          className="mySwiper rounded-sm overflow-hidden"
-          style={{
-            "--swiper-navigation-color": "#000", 
-            "--swiper-pagination-color": "#000",
-            "--swiper-navigation-size": "20px",
-          }}
+           className="mySwiper rounded-sm overflow-hidden"
+
         >
           {slides.map((slide, index) => (
             <SwiperSlide key={index} className="relative group overflow-hidden">
