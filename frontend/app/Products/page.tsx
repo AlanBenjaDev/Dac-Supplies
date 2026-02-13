@@ -5,7 +5,7 @@ import ProductList from "./Components/Products";
 export default function Ecommerce(){
   return(
     <>
-    <Header />
+
     <Hero />
    <ProductList />
    </>
