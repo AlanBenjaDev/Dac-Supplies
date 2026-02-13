@@ -1,0 +1,18 @@
+import bcrypt from "bcrypt"
+import dotenv from "dotenv"
+
+dotenv.config()
+
+const saltRounds = Number(process.env.SALT_ROUNDS) || 10;
+
+
+export const hashPassword = async (plainPassword: string): Promise<string> => {
+  return await bcrypt.hash(plainPassword, saltRounds);
+};
+
+export const comparePassword = async (
+  plainPassword: string,
+  hashedPassword: string
+): Promise<boolean> => {
+  return await bcrypt.compare(plainPassword, hashedPassword);
+};
