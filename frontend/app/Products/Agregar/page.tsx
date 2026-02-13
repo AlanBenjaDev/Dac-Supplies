@@ -5,6 +5,21 @@ import FileUpload from "./SubirProducto";
 import { toast } from "sonner";
 import { PackagePlus, DollarSign, Box, Layers, AlignLeft, Activity, Image as ImageIcon, Loader2 } from "lucide-react";
 
+// Definimos el Enum para que sea accesible en el componente
+export enum Categorias {
+  proteinas = "proteinas",
+  creatinas = "creatinas",
+  colagenos = "colagenos",
+  aminoacidos = "aminoacidos",
+  vitaminas = "vitaminas",
+  minerales = "minerales",
+  pre_entrenos = "pre_entrenos",
+  ganadores_peso = "ganadores_peso",
+  salud_bienestar = "salud_bienestar",
+  quemadores_grasa = "quemadores_grasa",
+  otros = "otros",
+}
+
 export default function AddProduct() {
   const { register, handleSubmit, reset } = useForm();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -22,12 +37,11 @@ export default function AddProduct() {
     const token = localStorage.getItem("accessToken");
     const formData = new FormData();
 
-    // Mantenemos tu lógica exacta de nombres
     formData.append("producto", data.nombre);
     formData.append("descripcion", data.descripcion);
     formData.append("precio", data.precio);
     formData.append("stock", data.stock);
-    formData.append("categoria", data.categoria);
+    formData.append("categoria", data.categoria); // Enviará el valor del enum (ej: "pre_entrenos")
     formData.append("imagen", selectedFile); 
 
     try {
@@ -58,7 +72,6 @@ export default function AddProduct() {
 
   return (
     <div className="min-h-screen bg-[#FBFBFB] py-16 px-4 relative">
-      {/* Barra superior de marca */}
       <div className="absolute top-0 left-0 w-full h-1 bg-black" />
 
       <form
@@ -84,7 +97,6 @@ export default function AddProduct() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-          {/* Nombre */}
           <div className="flex flex-col gap-2">
             <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 ml-1">
               Nombre Comercial
@@ -96,26 +108,27 @@ export default function AddProduct() {
             />
           </div>
 
-          {/* Categoría */}
           <div className="flex flex-col gap-2">
             <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 ml-1">
-              Categoría
+              Categoría Salud
             </label>
             <div className="relative">
               <select 
                 {...register("categoria")} 
                 className="w-full bg-gray-50 border-none p-4 text-sm text-black rounded-sm focus:ring-1 focus:ring-black outline-none appearance-none cursor-pointer"
               >
-                <option value="proteinas">Proteínas</option>
-                <option value="creatinas">Creatinas</option>
-                <option value="vitaminas">Vitaminas</option>
-                <option value="accesorios">Accesorios</option>
+                {/* Mapeo dinámico del Enum para evitar errores de tipeo */}
+                {Object.entries(Categorias).map(([key, value]) => (
+                  <option key={key} value={value}>
+                    {/* Reemplazamos guiones bajos por espacios y capitalizamos para la vista del usuario */}
+                    {value.replace(/_/g, ' ').toUpperCase()}
+                  </option>
+                ))}
               </select>
               <Layers size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
             </div>
           </div>
 
-          {/* Precio */}
           <div className="flex flex-col gap-2">
             <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 ml-1">
               Precio de Venta ($)
@@ -131,7 +144,6 @@ export default function AddProduct() {
             </div>
           </div>
 
-          {/* Stock */}
           <div className="flex flex-col gap-2">
             <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 ml-1">
               Unidades en Stock
@@ -148,7 +160,6 @@ export default function AddProduct() {
           </div>
         </div>
 
-        {/* Descripción */}
         <div className="flex flex-col gap-2">
           <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 ml-1">
             Información del Producto
@@ -164,7 +175,6 @@ export default function AddProduct() {
           </div>
         </div>
 
-        {/* Carga de Imagen */}
         <div className="flex flex-col gap-2">
           <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-1 ml-1 flex items-center gap-2">
              <ImageIcon size={14} /> Packshot Oficial
@@ -174,7 +184,6 @@ export default function AddProduct() {
           </div>
         </div>
 
-        {/* Botón de Envío */}
         <button
           type="submit"
           disabled={loading}
