@@ -49,15 +49,23 @@ export default function Header() {
     <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
       <div className="flex items-center justify-between max-w-7xl mx-auto px-6 py-4 gap-8">
         
-        <Link href="/" className="group flex items-center gap-2">
-          <div className="bg-black text-white px-2 py-1 font-black text-xl tracking-tighter transition-transform group-hover:scale-105">
-            DAC
+        {/* Branding DAC PRO con Eslogan */}
+        <Link href="/" className="group flex flex-col">
+          <div className="flex items-center gap-2">
+            <div className="bg-black text-white px-2 py-1 font-black text-xl tracking-tighter transition-transform group-hover:scale-105">
+                DAC PRO
+            </div>
+            <span className="font-light text-xs tracking-[0.3em] uppercase hidden sm:inline text-gray-500">
+                Suplementos
+            </span>
           </div>
-          <span className="font-light text-xs tracking-[0.3em] uppercase hidden sm:inline text-gray-500">
-            Suplementos
-          </span>
+          {/* Eslogan solicitado */}
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-1 italic group-hover:text-black transition-colors">
+            Entrená mejor, Rendí más
+          </p>
         </Link>
 
+        {/* Buscador */}
         <form onSubmit={handleSearch} className="flex flex-1 max-w-lg items-center relative group">
           <Search className="absolute left-4 h-4 w-4 text-gray-400 group-focus-within:text-black transition-colors" />
           <input
@@ -69,12 +77,13 @@ export default function Header() {
           />
         </form>
 
+        {/* Acciones de Usuario */}
         <div className="flex items-center gap-6 text-gray-600">
           {isLoggedIn ? (
             <div className="flex items-center gap-5">
               <Link href="/Carrito" className="relative hover:text-black transition-colors">
                 <ShoppingCart size={22} strokeWidth={1.5} />
-                <span className="absolute -top-2 -right-2 bg-emerald-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">2</span>
+                <span className="absolute -top-2 -right-2 bg-emerald-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">2</span>
               </Link>
               <button onClick={handleLogout} className="hover:text-red-500 transition-colors">
                 <LogOut size={20} strokeWidth={1.5} />
@@ -82,12 +91,12 @@ export default function Header() {
             </div>
           ) : (
             <div className="flex items-center gap-4">
-              <Link href="/Login" className="text-xs font-bold uppercase tracking-wider hover:text-black transition-colors">
+              <Link href="/Login" className="text-[10px] font-bold uppercase tracking-widest hover:text-black transition-colors">
                 Login
               </Link>
               <Link
                 href="/Register"
-                className="bg-black text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-full hover:bg-gray-800 transition-all shadow-sm"
+                className="bg-black text-white text-[10px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-full hover:bg-gray-800 transition-all shadow-lg shadow-black/10"
               >
                 Sumarme
               </Link>
@@ -96,13 +105,14 @@ export default function Header() {
         </div>
       </div>
 
+      {/* Nav de Categorías */}
       <nav className="border-t border-gray-50 bg-white/80 backdrop-blur-sm">
-        <div className="flex items-center overflow-x-auto max-w-7xl mx-auto px-4 py-3 gap-6 no-scrollbar md:justify-center">
+        <div className="flex items-center overflow-x-auto max-w-7xl mx-auto px-4 py-3 gap-8 no-scrollbar md:justify-center">
           {Object.entries(Categorias).map(([key, value]) => (
             <Link
               key={key}
               href={`/Categorias/${value}`}
-              className="whitespace-nowrap text-[10px] text-gray-400 uppercase tracking-[0.15em] font-semibold hover:text-black hover:border-b hover:border-black transition-all pb-1 border-b border-transparent"
+              className="whitespace-nowrap text-[10px] text-gray-400 uppercase tracking-[0.15em] font-bold hover:text-black transition-all pb-1 border-b border-transparent hover:border-black"
             >
               {value.replace("_", " ")}
             </Link>

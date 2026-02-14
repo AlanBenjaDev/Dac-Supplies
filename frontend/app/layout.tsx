@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Go Cell Tienda",
-  description: "Tienda Go Cell de tecnologia",
+  title: "DAC PRO Suplementos",
+  description: "Entrená mejor. Rendí más.",
 };
 
 export default function RootLayout({
