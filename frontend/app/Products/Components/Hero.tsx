@@ -13,22 +13,22 @@ import { Navigation, Pagination, Mousewheel, Keyboard, Autoplay } from 'swiper/m
 export default function Hero() {
   const slides = [
     { 
-      src: "/proteinas.jpg", 
-      title: "POTENCIÁ TU", 
-      highlight: "RENDIMIENTO", 
+      src: "/Dac-Protein-creatine.jpg", 
+      title: "MEJORÁ TU", 
+      highlight: "RECUPERACIÓN", 
       desc: "Suplementos de grado profesional para atletas exigentes." 
     },
     { 
-      src: "/Gemini_Generated_Image_jwejjjwejjjwejjj.jpg", 
+      src: "/Dac-protein.jpg", 
       title: "BIENESTAR &", 
       highlight: "VITALIDAD", 
       desc: "Vitaminas y minerales diseñados para tu equilibrio diario." 
     },
     { 
-      src: "/Gemini_Generated_Image_us9rjnus9rjnus9r.jpg", 
-      title: "RECUPERACIÓN", 
-      highlight: "MAXIMA", 
-      desc: "Aminoácidos de absorción rápida para post-entrenos intensos." 
+      src: "/Drink-dac-workout.jpg", 
+      title: "POTENCIÁ TU", 
+      highlight: "RENDIMIENTO", 
+      desc: "Pre-entrenos para llevar tu entrenamiento al siguiente nivel." 
     },
   ];
 
@@ -57,7 +57,6 @@ export default function Hero() {
                 priority={index === 0}
               />
               
-              {/* Contenido del Slide */}
               <div className="absolute inset-0 z-20 flex flex-col justify-center px-8 md:px-20 max-w-3xl">
                 <div className="flex items-center gap-2 mb-4 animate-fade-in">
                   <div className="h-[1px] w-8 bg-white/50" />
