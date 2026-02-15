@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
+import FileUpload from "../SubirProducto";
 import { useForm } from "react-hook-form";
-import FileUpload from "@/app/Products/Agregar/SubirProducto";
 import { toast } from "sonner";
 import Link from "next/link";
 import { 
@@ -62,7 +62,6 @@ export default function AdminProducts() {
   const handleDelete = async (id: string | number) => {
     const token = localStorage.getItem("accessToken");
     
-    // 1. Validación de seguridad: si no hay ID, ni intentamos
     if (!id) {
       toast.error("Error: El producto no tiene un ID válido");
       console.error("ID recibido:", id);
@@ -72,11 +71,10 @@ export default function AdminProducts() {
     if (!confirm("¿Estás seguro de eliminar este producto?")) return;
 
     try {
-      // Limpiamos la URL para evitar dobles barras //
       const baseUrl = API_URL?.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
       const targetUrl = `${baseUrl}/products/delete/${id}`;
       
-      console.log("Llamando a:", targetUrl); // DEBUG: Mirá esto en la consola del navegador
+    
 
       const res = await fetch(targetUrl, {
         method: "DELETE",
@@ -102,7 +100,6 @@ export default function AdminProducts() {
     }
   };
 
-  // 3. Función para crear
   const onSubmit = async (data: any) => {
     if (!selectedFile) {
       toast.error("Debes cargar una imagen del producto");
@@ -144,7 +141,6 @@ export default function AdminProducts() {
 
   return (
     <div className="min-h-screen bg-[#FBFBFB] py-16 px-4 space-y-20">
-      {/* SECCIÓN FORMULARIO */}
       <form
         onSubmit={handleSubmit(onSubmit)}
         className="max-w-3xl mx-auto p-6 md:p-10 bg-white border border-gray-100 rounded-sm shadow-sm flex flex-col gap-8 relative overflow-hidden"
@@ -217,7 +213,6 @@ export default function AdminProducts() {
         </button>
       </form>
 
-      {/* SECCIÓN LISTADO DE PRODUCTOS */}
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
           <div>
@@ -261,7 +256,6 @@ export default function AdminProducts() {
                       <span className="text-lg font-black text-black">${Number(product.precio).toLocaleString('es-AR')}</span>
                     </div>
 
-                    {/* BOTÓN ELIMINAR (TACHO DE BASURA) */}
                     <button 
                       onClick={() => handleDelete(product.id)}
                       className="h-10 w-10 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white flex items-center justify-center rounded-full transition-all active:scale-90 border border-red-100"

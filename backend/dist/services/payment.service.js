@@ -54,6 +54,11 @@ const checkoutService = async ({ userId, product_id, quantity, envio }) => {
     });
     await envios_1.enviosRepo.create({
         pedido_id: pedido.id,
+        nombre: envio.nombre,
+        apellido: envio.apellido,
+        documento: envio.documento,
+        provincia: envio.provincia,
+        telefono: envio.telefono,
         ciudad: envio.ciudad,
         direccion: envio.direccion,
         codigo_postal: envio.codigo_postal,

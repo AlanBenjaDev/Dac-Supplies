@@ -26,10 +26,15 @@ export default function ProductDetail() {
   const [preferenceId, setPreferenceId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [envio, setEnvio] = useState({
+    nombre:"",
+    apellido:"",
+    documento:"",
+    provincia: "",
     ciudad: "",
     direccion: "",
     codigo_postal: "",
-    tipo_envio: "correo"
+    tipo_envio: "correo",
+    telefono: ""
   });
 
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
@@ -70,7 +75,7 @@ export default function ProductDetail() {
       toast.error("Iniciá sesión para comprar");
       return;
     }
-    if (!envio.ciudad || !envio.direccion || !envio.codigo_postal) {
+    if (!envio.ciudad || !envio.direccion || !envio.codigo_postal || !envio.nombre || !envio.apellido || !envio.provincia || !envio.documento) {
       toast.error("Completá los datos de envío");
       return;
     }
@@ -154,7 +159,6 @@ export default function ProductDetail() {
           <div className="mb-8">
             <h1 className="text-5xl font-black mb-4 tracking-tighter leading-none uppercase">{product.producto}</h1>
             <div className="flex items-center gap-4 mb-6">
-                {/* PRECIO FORMATEADO AQUÍ */}
                 <span className="text-3xl font-light text-gray-900">
                   ${Number(product.precio).toLocaleString('es-AR')}
                 </span>
@@ -172,6 +176,31 @@ export default function ProductDetail() {
             </h3>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
+                <input 
+                  type="text" placeholder="Nombre" 
+                  className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
+                  onChange={(e) => handleEnvioChange("nombre", e.target.value)}
+                />
+                <input 
+                  type="text" placeholder="Apellido" 
+                  className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
+                  onChange={(e) => handleEnvioChange("apellido", e.target.value)}
+                />
+                <input 
+                  type="text" placeholder="Documento" 
+                  className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
+                  onChange={(e) => handleEnvioChange("documento", e.target.value)}
+                />
+                 <input 
+                  type="text" placeholder="Numero de telefono" 
+                  className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
+                  onChange={(e) => handleEnvioChange("telefono", e.target.value)}
+                />
+                <input 
+                  type="text" placeholder="Provincia" 
+                  className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
+                  onChange={(e) => handleEnvioChange("provincia", e.target.value)}
+                />
                 <input 
                   type="text" placeholder="Ciudad" 
                   className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
@@ -198,7 +227,6 @@ export default function ProductDetail() {
             </div>
           </div>
 
-          {/* Acciones */}
           <div className="space-y-3">
             <button
               onClick={handleCreatePreference}

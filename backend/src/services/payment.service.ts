@@ -79,6 +79,11 @@ export const checkoutService = async ({
 
   await enviosRepo.create({
     pedido_id: pedido.id,
+    nombre: envio.nombre,
+    apellido: envio.apellido,
+    documento: envio.documento,
+    provincia: envio.provincia,
+    telefono: envio.telefono,
     ciudad: envio.ciudad,
     direccion: envio.direccion,
     codigo_postal: envio.codigo_postal,

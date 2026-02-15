@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { createPreferenceController } from "../controllers/payment.controller";
 import { checkoutController } from "../controllers/payment.controller";
 import { autenticarToken } from "../middlewares/token";
 import { dashboardController } from "../controllers/package.controller";
