@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.obtenerProductosPorCategoria = exports.getProductsByIdService = exports.getProductsService = exports.createProductService = void 0;
+exports.deleteProductService = exports.obtenerProductosPorCategoria = exports.getProductsByIdService = exports.getProductsService = exports.createProductService = void 0;
 const db_1 = __importDefault(require("../config/db"));
 const createProductService = async (product) => {
     const [result] = await db_1.default.query(`INSERT INTO productos 
@@ -46,3 +46,7 @@ const obtenerProductosPorCategoria = async (categoria) => {
     return rows;
 };
 exports.obtenerProductosPorCategoria = obtenerProductosPorCategoria;
+const deleteProductService = async (productId) => {
+    await db_1.default.query(`DELETE FROM productos WHERE id = ? `, [productId]);
+};
+exports.deleteProductService = deleteProductService;

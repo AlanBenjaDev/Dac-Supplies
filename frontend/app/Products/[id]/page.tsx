@@ -89,18 +89,27 @@ export default function ProductDetail() {
   };
 
   const agregarAlCarrito = async (producto_id: number) => {
-    if (!token) {
-      toast.error("Iniciá sesión primero");
-      return;
-    }
+  if (product.stock <= 0) {
+    toast.error("Has alcanzado el límite de stock disponible para este producto");
+    return;
+  }
+
+  try {
     const res = await fetch(`${API_URL}/cart/add/${producto_id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ producto_id, cantidad: 1 }),
     });
-    if (res.ok) toast.success("Agregado al carrito");
-    else toast.error("Error al agregar");
-  };
+
+    if (res.ok) {
+      toast.success("Agregado al carrito");
+      setProduct({ ...product, stock: product.stock - 1 });
+    }
+  } catch (error) {
+    toast.error("Error al conectar con el servidor");
+  }
+};
+
 
   return (
     <main className="min-h-screen bg-[#FDFDFD] text-black pb-20">
@@ -113,7 +122,7 @@ export default function ProductDetail() {
 
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
         
-        <div className="sticky top-24 space-y-4">
+        <div className="lg:sticky lg:top-24 space-y-4">
             <div className="relative bg-white border border-gray-100 rounded-sm p-12 flex items-center justify-center min-h-[500px] shadow-sm">
               <div className="absolute top-6 left-6 flex flex-col gap-2">
                   <span className="bg-black text-white text-[9px] font-bold px-3 py-1 tracking-widest uppercase">Original DAC</span>

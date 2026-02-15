@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getProductosPorCategoria = exports.getProductsByIdController = exports.getProductsController = exports.createProductController = exports.wss = void 0;
+exports.deleteProductController = exports.getProductosPorCategoria = exports.getProductsByIdController = exports.getProductsController = exports.createProductController = exports.wss = void 0;
 exports.setWebSocketServer = setWebSocketServer;
 const product_service_1 = require("../services/product.service");
 const category_types_1 = require("../types/category.types");
@@ -80,3 +80,16 @@ const getProductosPorCategoria = async (req, res) => {
     }
 };
 exports.getProductosPorCategoria = getProductosPorCategoria;
+const deleteProductController = async (req, res) => {
+    try {
+        const userId = (Number(req.user?.id));
+        const productId = req.params.id;
+        await (0, product_service_1.deleteProductService)(Number(productId));
+        res.status(200).json({ message: "Producto eliminado exitosamente" });
+    }
+    catch (error) {
+        console.error("Error deleting product:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+exports.deleteProductController = deleteProductController;

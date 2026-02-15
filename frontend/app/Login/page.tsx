@@ -37,7 +37,7 @@ export default function Login() {
           description: "Tu sesión en DAC ha sido iniciada.",
           style: { background: '#fff', color: '#000', border: '1px solid #e5e7eb' }
         });
-        router.push("/Products");
+        window.location.href = "/Products"
       } else {
         toast.error("Credenciales inválidas", {
           description: "Revisá tu email o contraseña.",
@@ -57,7 +57,6 @@ export default function Login() {
       <div className="absolute -top-24 -right-24 w-96 h-96 bg-gray-100 rounded-full blur-3xl opacity-50" />
 
       <div className="w-full max-w-[440px] z-10">
-        {/* Logo Branding */}
         <div className="flex justify-center mb-8">
             <div className="bg-black text-white px-4 py-2 font-black text-2xl tracking-tighter shadow-xl">
                 DAC
@@ -76,7 +75,6 @@ export default function Login() {
           </div>
 
           <div className="space-y-6">
-            {/* Email Field */}
             <div className="flex flex-col space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Email Corporativo / Personal</label>
               <div className="relative group">
@@ -94,7 +92,6 @@ export default function Login() {
               {errors.email && <p className="text-red-500 text-[10px] font-bold uppercase mt-1 tracking-tighter">{errors.email.message}</p>}
             </div>
 
-            {/* Password Field */}
             <div className="flex flex-col space-y-2">
               <div className="flex justify-between items-end">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Contraseña</label>

@@ -16,6 +16,12 @@ export default function CarritoList() {
   const [token, setToken] = useState<string | null>(null);
   const [isTokenChecked, setIsTokenChecked] = useState(false);
   const [preferenceId, setPreferenceId] = useState<string | null>(null);
+   const [envio, setEnvio] = useState({
+    ciudad: "",
+    direccion: "",
+    codigo_postal: "",
+    tipo_envio: "correo"
+  });
   
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -26,6 +32,7 @@ export default function CarritoList() {
       setIsTokenChecked(true);
     }
   }, []);
+
 
   useEffect(() => {
     if (!token || !API_URL) return; 
@@ -46,36 +53,62 @@ export default function CarritoList() {
     fetchCart();
   }, [token, API_URL]);
 
-  const handleCreatePreference = async () => {
-    if (carrito.length === 0) return;
-    setPaying(true);
-    try {
-      const res = await fetch(`${API_URL}/payments/create-preference`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: "Compra en DAC Suplementos",
-          unit_price: calcularTotal(carrito),
-          quantity: 1,
-        }),
-      });
-      if (!res.ok) throw new Error("Error en servidor de pagos");
-      const data = await res.json();
-      setPreferenceId(data.preferenceId);
-    } catch (err) {
-      toast.error("Error al generar el pago");
-    } finally {
-      setPaying(false);
-    }
+    const handleEnvioChange = (field: string, value: string) => {
+    setEnvio((prev) => ({ ...prev, [field]: value }));
   };
 
-  if (!isTokenChecked || loading) {
-    return (
-      <main className="min-h-screen bg-white flex flex-col items-center justify-center">
-        <div className="w-8 h-8 border-2 border-gray-100 border-t-black rounded-full animate-spin"></div>
-      </main>
-    );
+const handleCreatePreference = async () => {
+  if (!token) {
+    toast.error("Iniciá sesión para comprar");
+    return;
   }
+  if (!envio.ciudad || !envio.direccion || !envio.codigo_postal) {
+    toast.error("Completá los datos de envío");
+    return;
+  }
+
+  setPaying(true); 
+
+  try {
+    const res = await fetch(`${API_URL}/payments/checkout`, { 
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json", 
+        Authorization: `Bearer ${token}` 
+      },
+      body: JSON.stringify({ 
+        envio,
+      }),
+    });
+    
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    setPreferenceId(data.preferenceId);
+  } catch (error) {
+    toast.error("Error al iniciar el pago");
+  } finally {
+    setPaying(false);
+  }
+};
+
+
+const handleDeleteItem = async (idDeLaFila: number) => {
+  try {
+    const res = await fetch(`${API_URL}/cart/delete/${idDeLaFila}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (res.ok) {
+      // Filtramos por el ID de la fila para que desaparezca de la vista
+      setCarrito((prev) => prev.filter((item) => item.id !== idDeLaFila));
+      toast.success("Eliminado");
+    }
+  } catch (error) {
+    toast.error("Error al borrar");
+  }
+};
+
 
   if (carrito.length === 0) {
     return (
@@ -106,7 +139,6 @@ export default function CarritoList() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          {/* Lista de Productos */}
           <div className="lg:col-span-2 space-y-6">
             {carrito.map((cart) => (
               <div key={cart.id} className="bg-white border border-gray-100 p-5 md:p-8 rounded-sm flex items-center gap-8 hover:shadow-xl hover:shadow-black/5 transition-all group">
@@ -116,7 +148,9 @@ export default function CarritoList() {
                 <div className="flex-grow">
                   <div className="flex justify-between items-start mb-2">
                     <h2 className="text-sm md:text-lg font-black uppercase tracking-tight text-black line-clamp-1">{cart.producto}</h2>
-                    <button className="text-gray-300 hover:text-red-500 transition-colors p-1">
+                    <button 
+                    onClick={handleDeleteItem.bind(null, cart.id)}
+                    className="text-gray-300 hover:text-red-500 transition-colors p-1">
                       <Trash2 size={18} />
                     </button>
                   </div>
@@ -133,10 +167,28 @@ export default function CarritoList() {
             ))}
           </div>
 
-          {/* Resumen de Compra */}
           <div className="lg:col-span-1">
+             <div className="grid grid-cols-2 gap-4">
+                <input 
+                  type="text" placeholder="Ciudad" 
+                  className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
+                  onChange={(e) => handleEnvioChange("ciudad", e.target.value)}
+                />
+                <input 
+                  type="text" placeholder="Código Postal" 
+                  className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
+                  onChange={(e) => handleEnvioChange("codigo_postal", e.target.value)}
+                />
+              </div>
+              <input 
+                type="text" placeholder="Dirección Completa" 
+                className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
+                onChange={(e) => handleEnvioChange("direccion", e.target.value)}
+              />
             <div className="bg-white border border-gray-100 rounded-sm p-10 sticky top-24 shadow-2xl shadow-black/[0.02]">
               <h2 className="text-xs font-black uppercase tracking-[0.3em] mb-8 border-b border-gray-50 pb-4 text-gray-400">Resumen de Orden</h2>
+              
+              
               
               <div className="space-y-5 mb-10">
                 <div className="flex justify-between text-sm">

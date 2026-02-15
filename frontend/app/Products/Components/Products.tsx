@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ShoppingCart, Star, ShieldCheck, Activity } from "lucide-react";
+import { toast } from "sonner";
 
 interface Product {
   id: number;
@@ -16,11 +17,19 @@ export default function ProductList() {
   const [productList, setProductList] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+          const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+
+          const [token, setToken] = useState<string | null>(null);
+
+useEffect(() => {
+  setToken(localStorage.getItem("accessToken"));
+}, []);
+
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
         const res = await fetch(`${API_URL}/products/products`);
         if (!res.ok) throw new Error("Error al traer productos");
         const data: Product[] = await res.json();
@@ -33,6 +42,36 @@ export default function ProductList() {
     };
     fetchProducts();
   }, []);
+
+const agregarAlCarrito = async (producto_id: number) => {
+    if (!token) {
+      toast.error("Iniciá sesión primero");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/cart/add/${producto_id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ producto_id, cantidad: 1 }),
+      });
+
+      const result = await res.json(); // Obtenemos el JSON del backend
+
+      if (res.ok) {
+        toast.success("Agregado al carrito");
+      } else {
+        // Aquí capturamos el mensaje: "Solo podés comprar un máximo de 5 unidades..."
+        toast.error(result.error || "Límite alcanzado", {
+          description: result.mensaje, 
+          style: { background: '#fff', color: '#000', border: '1px solid #000' } 
+        });
+      }
+    } catch (error) {
+      toast.error("Error de red", { description: "No se pudo conectar con el servidor." });
+    }
+}; // <-- Asegurate de cerrar esta llave
+
 
   if (error) return (
     <div className="flex flex-col items-center justify-center py-32 text-gray-800 bg-white">
@@ -55,7 +94,6 @@ export default function ProductList() {
   return (
     <main className="min-h-screen bg-[#FBFBFB] py-16 px-6">
       <div className="max-w-7xl mx-auto">
-        {/* Encabezado Sofisticado */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4">
           <div>
             <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] mb-2 flex items-center gap-2">
@@ -70,15 +108,12 @@ export default function ProductList() {
           </p>
         </div>
 
-        {/* Grid de Productos */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12">
           {productList.map((product) => (
             <div key={product.id} className="group flex flex-col">
               
-              {/* Contenedor de Imagen */}
               <div className="relative aspect-[4/5] mb-5 overflow-hidden rounded-sm bg-white border border-gray-100 transition-all duration-500 group-hover:shadow-xl group-hover:shadow-black/5">
                 
-                {/* Badge de Calidad/Envío */}
                 {product.precio > 50000 && (
                   <div className="absolute top-4 left-4 z-10 bg-black text-white text-[9px] font-bold px-2.5 py-1 tracking-widest flex items-center gap-1.5 shadow-sm">
                     <ShieldCheck size={10} /> PREMIUM
@@ -98,7 +133,6 @@ export default function ProductList() {
                 </div>
               </div>
               
-              {/* Info del Producto */}
               <div className="flex flex-col flex-grow">
                 <div className="flex items-center gap-1 mb-1.5">
                   {[...Array(5)].map((_, i) => (
@@ -117,12 +151,13 @@ export default function ProductList() {
                   <div className="flex flex-col">
                     <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Precio</span>
                     <span className="text-lg font-black text-black">
-                      {/* Formateo de Argentina: 56.000 */}
                       ${Number(product.precio).toLocaleString('es-AR')}
                     </span>
                   </div>
 
-                  <button className="h-10 w-10 bg-black hover:bg-gray-800 text-white flex items-center justify-center rounded-full transition-all active:scale-90 shadow-lg shadow-black/10">
+                  <button 
+                  onClick={agregarAlCarrito.bind(null, product.id)}
+                  className="h-10 w-10 bg-black hover:bg-gray-800 text-white flex items-center justify-center rounded-full transition-all active:scale-90 shadow-lg shadow-black/10">
                     <ShoppingCart size={18} strokeWidth={2.5} />
                   </button>
                 </div>

@@ -5,7 +5,6 @@ import FileUpload from "./SubirProducto";
 import { toast } from "sonner";
 import { PackagePlus, DollarSign, Box, Layers, AlignLeft, Activity, Image as ImageIcon, Loader2 } from "lucide-react";
 
-// Definimos el Enum para que sea accesible en el componente
 export enum Categorias {
   proteinas = "proteinas",
   creatinas = "creatinas",
@@ -41,7 +40,7 @@ export default function AddProduct() {
     formData.append("descripcion", data.descripcion);
     formData.append("precio", data.precio);
     formData.append("stock", data.stock);
-    formData.append("categoria", data.categoria); // Enviará el valor del enum (ej: "pre_entrenos")
+    formData.append("categoria", data.categoria); 
     formData.append("imagen", selectedFile); 
 
     try {

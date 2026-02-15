@@ -1,4 +1,4 @@
-import { createProductController,getProductsController,getProductsByIdController, getProductosPorCategoria } from "../controllers/product.controller";
+import { createProductController,getProductsController,getProductsByIdController, getProductosPorCategoria, deleteProductController } from "../controllers/product.controller";
 import { Router } from "express";
 import { autenticarToken } from "../middlewares/token";
 import { authorizeRoles, RoleEstatus } from "../middlewares/roles";
@@ -20,5 +20,7 @@ productsRouter.post(
 productsRouter.get("/products", getProductsController);
 productsRouter.get("/products/:id", getProductsByIdController);
 productsRouter.get("/:categoriaQuery", getProductosPorCategoria);
+productsRouter.delete("/delete/:id", autenticarToken, authorizeRoles(RoleEstatus.admin), deleteProductController);
+
 export default productsRouter;
 

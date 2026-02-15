@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import multer from "multer";
 import { WebSocketServer } from "ws";
-import { createProductService, getProductsByIdService, getProductsService, obtenerProductosPorCategoria } from "../services/product.service";
+import { createProductService, deleteProductService, getProductsByIdService, getProductsService, obtenerProductosPorCategoria } from "../services/product.service";
 import { Categorias } from "../types/category.types";
 
 
@@ -91,3 +91,19 @@ export const getProductosPorCategoria = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Error al obtener productos" });
   }
 };
+
+
+  export const deleteProductController = async (req:Request, res:Response) =>{
+    try{
+        const userId = (Number(req.user?.id));
+        const productId = req.params.id;
+        await deleteProductService(Number(productId));
+        res.status(200).json({ message: "Producto eliminado exitosamente" });
+    }
+    catch(error){
+      console.error("Error deleting product:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+
+  

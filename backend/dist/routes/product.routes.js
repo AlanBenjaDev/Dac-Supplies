@@ -13,4 +13,5 @@ productsRouter.post("/create/product", upload_1.default.single("imagen"), token_
 productsRouter.get("/products", product_controller_1.getProductsController);
 productsRouter.get("/products/:id", product_controller_1.getProductsByIdController);
 productsRouter.get("/:categoriaQuery", product_controller_1.getProductosPorCategoria);
+productsRouter.delete("/delete/:id", token_1.autenticarToken, (0, roles_1.authorizeRoles)(roles_1.RoleEstatus.admin), product_controller_1.deleteProductController);
 exports.default = productsRouter;

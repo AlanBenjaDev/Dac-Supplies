@@ -14,7 +14,6 @@ const mercadopagoWebhook = async (req, res) => {
             return res.sendStatus(200);
         }
         const paymentId = data.id;
-        // Evitar reprocesar el mismo pago
         const pedidoExistente = await pedidos_1.pedidosRepo.findByPaymentId(paymentId);
         if (pedidoExistente) {
             return res.sendStatus(200);

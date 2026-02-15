@@ -77,3 +77,8 @@ export const obtenerProductosPorCategoria = async (categoria: Categorias) => {
   const [rows] = await db.query(query, [categoria]);
   return rows;
 };
+
+
+export const deleteProductService = async(productId: number) => {
+  await db.query(`DELETE FROM productos WHERE id = ? `, [productId ]);
+}
