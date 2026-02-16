@@ -34,8 +34,10 @@ export default function ProductDetail() {
     direccion: "",
     codigo_postal: "",
     tipo_envio: "correo",
-    telefono: ""
+    telefono: "",
+
   });
+
 
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -196,6 +198,7 @@ export default function ProductDetail() {
                   className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
                   onChange={(e) => handleEnvioChange("telefono", e.target.value)}
                 />
+          
                 <input 
                   type="text" placeholder="Provincia" 
                   className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"

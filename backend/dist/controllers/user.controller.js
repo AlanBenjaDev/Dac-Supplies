@@ -38,7 +38,7 @@ const loginController = async (req, res) => {
         if (!compare) {
             return res.status(400).json({ message: "Incorrect password" });
         }
-        const token = (0, token_js_1.generarToken)({ id: usuario.id, role: usuario.role });
+        const token = (0, token_js_1.generarToken)({ id: usuario.id, role: usuario.role, email: usuario.email });
         console.log("TToken Creado");
         res.status(200).json({
             message: "Succesful Login.",

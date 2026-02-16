@@ -8,6 +8,7 @@ const checkoutController = async (req, res) => {
             return res.status(401).json({ message: "Usuario no autenticado" });
         }
         const userId = Number(req.user.id);
+        const userEmail = String(req.user.email);
         const { product_id, quantity, envio } = req.body;
         if (!product_id || !quantity || !envio) {
             return res.status(400).json({ message: "Datos incompletos" });
@@ -17,7 +18,8 @@ const checkoutController = async (req, res) => {
             userId,
             product_id,
             quantity,
-            envio
+            envio,
+            userEmail
         });
         res.status(200).json({
             preferenceId: result.preferenceId

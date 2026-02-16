@@ -18,6 +18,7 @@ interface DashboardRow extends RowDataPacket {
   producto_precio: number;
   total_pedido: number;
   estado_pedido: string;
+  email: string;
 }
 
 export const dashboardService = async (): Promise<DashboardRow[]> => {
@@ -33,6 +34,7 @@ SELECT
   e.provincia,
   e.ciudad,
   e.direccion,
+  e.email,
   e.codigo_postal,
   e.estado AS envio_estado,
   e.created_at AS fecha_envio,

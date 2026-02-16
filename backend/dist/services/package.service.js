@@ -18,6 +18,7 @@ SELECT
   e.provincia,
   e.ciudad,
   e.direccion,
+  e.email,
   e.codigo_postal,
   e.estado AS envio_estado,
   e.created_at AS fecha_envio,

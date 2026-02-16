@@ -32,6 +32,7 @@ interface DashboardData {
   precio_unitario: number; // Coincide con tu SQL
   total_pedido: number;
   estado_pedido: string;
+  email: string;
 }
 
 export default function AdminDashboard() {
@@ -66,7 +67,7 @@ export default function AdminDashboard() {
   const entregados = data.filter(e => e.envio_estado === 'entregado').length;
   const ingresosHoy = data
     .filter(e => new Date(e.fecha_envio).toDateString() === new Date().toDateString())
-    .reduce((acc, curr) => acc + Number(curr.precio_unitario), 0); // Basado en el item
+    .reduce((acc, curr) => acc + Number(curr.precio_unitario), 0); 
 
   const filteredEnvios = data.filter(e =>
     e.pedido_id.toString().includes(search) ||
@@ -153,13 +154,16 @@ export default function AdminDashboard() {
                           <span className="text-gray-800 font-bold text-[11px] uppercase tracking-tighter truncate max-w-[150px]">{envio.nombre_producto}</span>
                           <span className="text-black font-black text-xs">${Number(envio.precio_unitario).toLocaleString('es-AR')}</span>
                         </div>
-                      </td>
+                      </td>                   
                       <td className="px-8 py-6">
                         <div className="flex flex-col text-[11px]">
                           <span className="text-gray-800 font-bold uppercase tracking-tighter">{envio.provincia} - {envio.ciudad}</span>
-                          <span className="text-gray-400 text-[9px] uppercase tracking-widest font-medium">TEL: {envio.telefono}</span>
+                         <span className="text-gray-400 text-[9px] uppercase tracking-widest font-medium">TEL: {envio.telefono}  </span>
+                         <span className="text-gray-600 text-[9px]  tracking-widest font-medium"> GMAIL: {envio.email} </span>
+
                         </div>
                       </td>
+                      
                       <td className="px-8 py-6">
                         <div className="flex flex-col text-[11px]">
                           <span className="text-gray-800 font-bold uppercase tracking-tighter truncate max-w-[180px]">{envio.direccion}</span>

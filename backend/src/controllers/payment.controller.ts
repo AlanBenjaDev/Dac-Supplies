@@ -12,6 +12,10 @@ export const checkoutController = async (req: Request, res: Response) => {
 
 const userId = Number(req.user.id);
 
+const userEmail = String(req.user.email)
+
+
+
 const { product_id, quantity, envio } = req.body;
 
 if (!product_id || !quantity || !envio) {
@@ -21,9 +25,11 @@ if (!product_id || !quantity || !envio) {
     console.log("envio es", envio)
      const result = await checkoutService({
       userId,
+
       product_id,
       quantity,
-      envio
+      envio,
+      userEmail
     });
 
     res.status(200).json({

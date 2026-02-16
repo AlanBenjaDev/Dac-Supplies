@@ -62,7 +62,8 @@ export const checkoutService = async ({
   userId,
   product_id,
   quantity,
-  envio
+  envio,
+  userEmail
 }: any) => {
 
   const producto = await productosRepo.findById(product_id);
@@ -87,7 +88,8 @@ export const checkoutService = async ({
     ciudad: envio.ciudad,
     direccion: envio.direccion,
     codigo_postal: envio.codigo_postal,
-    tipo_envio: envio.tipo_envio
+    tipo_envio: envio.tipo_envio,
+     email: userEmail
   });
 
 await pedidosDetalleRepo.create({

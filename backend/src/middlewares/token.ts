@@ -42,7 +42,7 @@ if (!token) {
 }
 
 
-export function generarToken(payload: { id: number; role: RoleEstatus }): string {
+export function generarToken(payload: { id: number; email: string; role: RoleEstatus  }): string {
  
   return jwt.sign(payload, ACCESS_TOKEN_SECRET, { expiresIn: "7d" });
 }

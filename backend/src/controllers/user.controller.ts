@@ -55,7 +55,7 @@ export const loginController = async (req: Request, res: Response) => {
     }
 
 
-const token = generarToken({ id: usuario.id, role: usuario.role });
+const token = generarToken({ id: usuario.id, role: usuario.role, email: usuario.email });
 
         console.log("TToken Creado"); 
 
