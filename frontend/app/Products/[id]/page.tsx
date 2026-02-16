@@ -15,9 +15,7 @@ interface Product {
   stock: number;
 }
 
-if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_MP_PUBLIC_KEY) {
-  initMercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY, { locale: "es-AR" });
-}
+
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -40,6 +38,17 @@ export default function ProductDetail() {
 
 
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+useEffect(() => {
+  if (process.env.NEXT_PUBLIC_MP_PUBLIC_KEY) {
+    initMercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY, {
+      locale: "es-AR",
+    });
+  }
+}, []);
+
+
+  
 
   useEffect(() => {
     const storedToken = localStorage.getItem("accessToken");
