@@ -14,13 +14,14 @@ export const enviosRepo = {
     direccion,
     codigo_postal,
     telefono,
-    email
+    email,
+    color
   }: any) => {
 
     await db.query(
       `INSERT INTO envios
-       (pedido_id, tipo_envio, ciudad, direccion, codigo_postal,nombre,apellido,documento,provincia,telefono,email)
-       VALUES (?, ?, ?, ?, ?,?,?,?,?,?,?)`,
+       (pedido_id, tipo_envio, ciudad, direccion, codigo_postal,nombre,apellido,documento,provincia,telefono,email,color)
+       VALUES (?, ?, ?, ?, ?,?,?,?,?,?,?,?)`,
       [
         pedido_id,
         tipo_envio,
@@ -32,7 +33,8 @@ export const enviosRepo = {
         documento,
         provincia,
         telefono,
-        email
+        email,
+        color
       ]
     );
   }

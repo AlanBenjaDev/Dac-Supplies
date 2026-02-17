@@ -63,6 +63,7 @@ export const checkoutService = async ({
   product_id,
   quantity,
   envio,
+  color,
   userEmail
 }: any) => {
 
@@ -89,7 +90,9 @@ export const checkoutService = async ({
     direccion: envio.direccion,
     codigo_postal: envio.codigo_postal,
     tipo_envio: envio.tipo_envio,
-     email: userEmail
+     email: userEmail,
+     color: color ?? null
+
   });
 
 await pedidosDetalleRepo.create({

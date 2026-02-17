@@ -42,7 +42,7 @@ const createPreferenceService = async ({ title, unit_price, quantity, pedidoId }
     return response.id;
 };
 exports.createPreferenceService = createPreferenceService;
-const checkoutService = async ({ userId, product_id, quantity, envio, userEmail }) => {
+const checkoutService = async ({ userId, product_id, quantity, envio, color, userEmail }) => {
     const producto = await products_1.productosRepo.findById(product_id);
     if (!producto)
         throw new Error("Producto no existe");
@@ -63,7 +63,8 @@ const checkoutService = async ({ userId, product_id, quantity, envio, userEmail 
         direccion: envio.direccion,
         codigo_postal: envio.codigo_postal,
         tipo_envio: envio.tipo_envio,
-        email: userEmail
+        email: userEmail,
+        color: color ?? null
     });
     await pedidosDetalles_1.pedidosDetalleRepo.create({
         pedido_id: pedido.id,

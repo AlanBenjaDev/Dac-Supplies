@@ -9,16 +9,18 @@ const checkoutController = async (req, res) => {
         }
         const userId = Number(req.user.id);
         const userEmail = String(req.user.email);
-        const { product_id, quantity, envio } = req.body;
+        const { product_id, quantity, envio, color } = req.body;
         if (!product_id || !quantity || !envio) {
             return res.status(400).json({ message: "Datos incompletos" });
         }
         console.log("envio es", envio);
+        console.log("color es", color);
         const result = await (0, payment_service_1.checkoutService)({
             userId,
             product_id,
             quantity,
             envio,
+            color,
             userEmail
         });
         res.status(200).json({

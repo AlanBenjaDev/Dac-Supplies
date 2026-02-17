@@ -23,6 +23,8 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [preferenceId, setPreferenceId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [color, setColor] = useState<string | null>(null);
+
   const [envio, setEnvio] = useState({
     nombre:"",
     apellido:"",
@@ -33,6 +35,7 @@ export default function ProductDetail() {
     codigo_postal: "",
     tipo_envio: "correo",
     telefono: "",
+   
 
   });
 
@@ -94,7 +97,7 @@ useEffect(() => {
       const res = await fetch(`${API_URL}/payments/checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ product_id: product.id, quantity: 1, envio }),
+        body: JSON.stringify({ product_id: product.id, quantity: 1, envio, color }),
       });
       if (!res.ok) throw new Error();
       const data = await res.json();
@@ -126,6 +129,7 @@ useEffect(() => {
   }
 };
 
+const isBidon = product.producto.toLowerCase().includes("bidon");
 
   return (
     <main className="min-h-screen bg-[#FDFDFD] text-black pb-20">
@@ -180,6 +184,39 @@ useEffect(() => {
               {product.descripcion}
             </p>
           </div>
+          {isBidon && (
+  <div className="mb-8">
+    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-600 mb-3">
+      Elegí un color
+    </h3>
+
+    <div className="flex gap-4">
+      {[
+        { name: "Amarillo", value: "amarillo", class: "bg-yellow-400" },
+        { name: "Negro", value: "negro", class: "bg-black" },
+        { name: "Rosa", value: "rosa", class: "bg-pink-400" },
+        { name: "Azul", value: "azul", class: "bg-blue-500" },
+      ].map((c) => (
+        <button
+          key={c.value}
+          onClick={() => setColor(c.value)}
+          className={`w-10 h-10 rounded-sm border-2 transition-all
+            ${c.class}
+            ${color === c.value ? "border-black scale-110" : "border-gray-200"}
+          `}
+          title={c.name}
+        />
+      ))}
+    </div>
+
+    {!color && (
+      <p className="text-[10px] text-red-500 mt-2 uppercase font-bold tracking-widest">
+        Seleccioná un color para continuar
+      </p>
+    )}
+  </div>
+)}
+
 
           <div className="bg-white border border-gray-100 rounded-sm p-8 mb-8 shadow-sm">
             <h3 className="text-black font-bold mb-6 uppercase text-[11px] tracking-[0.2em] flex items-center gap-2">

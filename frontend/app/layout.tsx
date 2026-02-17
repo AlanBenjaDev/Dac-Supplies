@@ -19,7 +19,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "DAC PRO Suplementos",
   description: "Entrená mejor. Rendí más.",
+  icons: {
+    icon: "/icon.svg",         
+    apple:"/icon.svg"
+       
+  },
 };
+
 
 export default function RootLayout({
   children,

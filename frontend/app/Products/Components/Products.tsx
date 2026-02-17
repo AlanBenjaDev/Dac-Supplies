@@ -70,7 +70,7 @@ const agregarAlCarrito = async (producto_id: number) => {
     } catch (error) {
       toast.error("Error de red", { description: "No se pudo conectar con el servidor." });
     }
-}; // <-- Asegurate de cerrar esta llave
+}; 
 
 
   if (error) return (
