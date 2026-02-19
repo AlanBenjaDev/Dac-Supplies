@@ -14,7 +14,6 @@ interface Producto {
   producto_id: number;
   nombre_producto: string;
   cantidad: number;
-  precio_unitario: number;
   subtotal: number;
 }
 
@@ -25,7 +24,6 @@ interface DashboardData {
   fecha_envio: string;
   envio?: {
     envio_id: number;
-    tipo_envio: string;
     nombre: string;
     apellido: string;
     documento: string;
@@ -52,13 +50,10 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
         const token = localStorage.getItem("accessToken");
-
         const res = await fetch(`${API_URL}/payments/dashboard`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
         if (!res.ok) throw new Error("Error servidor");
-
         const result = await res.json();
         setData(result || []);
       } catch (err) {
@@ -68,71 +63,53 @@ export default function AdminDashboard() {
         setLoading(false);
       }
     };
-
     fetchDashboard();
   }, [API_URL]);
 
-  const pendientes = data.filter((e) => e.envio?.envio_estado === "preparando").length;
-  const enCamino = data.filter((e) => e.envio?.envio_estado === "en_camino").length;
-  const entregados = data.filter((e) => e.envio?.envio_estado === "entregado").length;
-
-  const ingresosHoy = data
-    .filter(
-      (e) =>
-        new Date(e.fecha_envio).toDateString() ===
-        new Date().toDateString()
-    )
-    .reduce((acc, curr) => acc + Number(curr.total_pedido || 0), 0);
-
-  const filtered = useMemo(() => {
-    const term = search.toLowerCase();
-
-    return data.filter((pedido) => {
-      const envio = pedido.envio;
-
-      return (
-        pedido.pedido_id.toString().includes(term) ||
-        envio?.apellido?.toLowerCase().includes(term) ||
-        envio?.nombre?.toLowerCase().includes(term) ||
-        envio?.documento?.includes(term) ||
-        envio?.telefono?.includes(term) ||
-        envio?.email?.toLowerCase().includes(term) ||
-        pedido.productos?.some((p) =>
-          p.nombre_producto?.toLowerCase().includes(term)
-        )
-      );
+  // 🔹 Métricas de pedidos
+  const pedidosPorEstado = useMemo(() => {
+    const map = { preparando: 0, en_camino: 0, entregado: 0 };
+    data.forEach((pedido) => {
+      const estado = pedido.envio?.envio_estado ?? "preparando";
+      map[estado] = (map[estado] || 0) + 1;
     });
-  }, [data, search]);
+    return map;
+  }, [data]);
 
-  // 🔥 NORMALIZAMOS PEDIDOS (para que la tabla no dependa de item.envio)
-  const pedidosConEnvioPlano = useMemo(() => {
-    return filtered.map((pedido) => ({
-      pedido_id: pedido.pedido_id,
-      nombre: pedido.envio?.nombre ?? "-",
-      apellido: pedido.envio?.apellido ?? "",
-      documento: pedido.envio?.documento ?? "-",
-      telefono: pedido.envio?.telefono ?? "-",
-      direccion: pedido.envio?.direccion ?? "-",
-      ciudad: pedido.envio?.ciudad ?? "-",
-      provincia: pedido.envio?.provincia ?? "-",
-      codigo_postal: pedido.envio?.codigo_postal ?? "-",
-      email: pedido.envio?.email ?? "-",
-      productos: pedido.productos,
-      total_pedido: pedido.total_pedido,
-      estado: pedido.envio?.envio_estado ?? "preparando",
-    }));
-  }, [filtered]);
+  const ingresosHoy = useMemo(() => {
+    const hoy = new Date().toDateString();
+    return data
+      .filter((e) => new Date(e.fecha_envio).toDateString() === hoy)
+      .reduce((acc, curr) => acc + Number(curr.total_pedido || 0), 0);
+  }, [data]);
 
+  const ingresosTotales = useMemo(() => {
+    return data.reduce((acc, curr) => acc + Number(curr.total_pedido || 0), 0);
+  }, [data]);
+
+  // 🔹 Productos individuales
   const productosIndividuales = useMemo(() => {
-    return pedidosConEnvioPlano.flatMap((pedido) =>
+    return data.flatMap((pedido) =>
       pedido.productos.map((prod) => ({
-        ...pedido,
-        nombre_producto: prod.nombre_producto,
-        cantidad: prod.cantidad,
-        subtotal: prod.subtotal,
+        ...prod,
       }))
     );
-  }, [pedidosConEnvioPlano]);
+  }, [data]);
+
+  // 🔹 Productos agrupados
+  const productosAgrupados = useMemo(() => {
+    const mapa: Record<string, { unidades: number; total: number }> = {};
+    productosIndividuales.forEach((prod) => {
+      if (!mapa[prod.nombre_producto]) {
+        mapa[prod.nombre_producto] = { unidades: 0, total: 0 };
+      }
+      mapa[prod.nombre_producto].unidades += prod.cantidad;
+      mapa[prod.nombre_producto].total += Number(prod.subtotal);
+    });
+    return Object.entries(mapa)
+      .map(([nombre, stats]) => ({ nombre, ...stats }))
+      .sort((a, b) => b.unidades - a.unidades); // Top vendidos primero
+  }, [productosIndividuales]);
 
   const getStatusStyle = (estado: string) => {
     switch (estado) {
@@ -147,10 +124,17 @@ export default function AdminDashboard() {
     }
   };
 
+  if (loading)
+    return (
+      <div className="p-20 text-center">
+        <Loader2 className="animate-spin mx-auto" />
+      </div>
+    );
+
   return (
     <div className="min-h-screen bg-[#FBFBFB] text-black p-6 md:p-10">
       <div className="max-w-7xl mx-auto">
-
+        {/* Título */}
         <div className="mb-12">
           <div className="flex items-center gap-2 mb-2 text-gray-400 font-bold text-[10px] uppercase tracking-[0.3em]">
             <Activity size={14} className="text-black" />
@@ -161,45 +145,43 @@ export default function AdminDashboard() {
           </h1>
         </div>
 
+        {/* Métricas principales */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-          <MetricCard icon={<Clock size={20} />} label="Preparando" value={pendientes} />
-          <MetricCard icon={<Truck size={20} />} label="En Camino" value={enCamino} />
-          <MetricCard icon={<CheckCircle size={20} />} label="Entregados" value={entregados} />
+          <MetricCard icon={<Clock size={20} />} label="Preparando" value={pedidosPorEstado.preparando} />
+          <MetricCard icon={<Truck size={20} />} label="En Camino" value={pedidosPorEstado.en_camino} />
+          <MetricCard icon={<CheckCircle size={20} />} label="Entregados" value={pedidosPorEstado.entregado} />
           <MetricCard icon={<TrendingUp size={20} />} label="Ventas Hoy" value={`$${ingresosHoy.toLocaleString("es-AR")}`} />
+          <MetricCard icon={<TrendingUp size={20} />} label="Ingresos Totales" value={`$${ingresosTotales.toLocaleString("es-AR")}`} />
         </div>
 
-        {loading ? (
-          <div className="p-20 text-center">
-            <Loader2 className="animate-spin mx-auto" />
-          </div>
-        ) : (
-          <>
-            <SectionTable
-              title="Productos por Carrito"
-              data={pedidosConEnvioPlano}
-              getStatusStyle={getStatusStyle}
-              isUnit={false}
-            />
+        {/* Tabla de pedidos */}
+        <SectionTable data={data} getStatusStyle={getStatusStyle} />
 
-            <SectionTable
-              title="Productos por Unidad"
-              data={productosIndividuales}
-              getStatusStyle={getStatusStyle}
-              isUnit={true}
-            />
-          </>
-        )}
+        {/* Tabla de productos agrupados */}
+        <SectionProductStats data={productosAgrupados} />
       </div>
     </div>
   );
 }
 
-function SectionTable({ title, data, getStatusStyle, isUnit }: any) {
+// --------------------- COMPONENTES ---------------------
+
+function MetricCard({ icon, label, value }: any) {
+  return (
+    <div className="bg-white p-6 border border-gray-100 shadow-sm flex flex-col items-start">
+      <div className="mb-2">{icon}</div>
+      <h3 className="text-xs text-gray-400 uppercase tracking-widest">{label}</h3>
+      <p className="text-2xl font-black">{value}</p>
+    </div>
+  );
+}
+
+function SectionTable({ data, getStatusStyle }: any) {
   return (
     <div className="bg-white border border-gray-100 shadow-sm overflow-x-auto mb-16">
       <div className="p-8 border-b border-gray-50">
         <h2 className="font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2">
-          <Package size={16} /> {title}
+          <Package size={16} /> Pedidos
         </h2>
       </div>
 
@@ -208,59 +190,46 @@ function SectionTable({ title, data, getStatusStyle, isUnit }: any) {
           <tr>
             <th className="px-6 py-4">Cliente</th>
             <th className="px-6 py-4">Datos de Envío</th>
-            <th className="px-6 py-4">Producto</th>
+            <th className="px-6 py-4">Productos</th>
             <th className="px-6 py-4">Total</th>
             <th className="px-6 py-4">Estado</th>
           </tr>
         </thead>
 
         <tbody className="divide-y divide-gray-100">
-          {data.map((item: any, index: number) => (
-            <tr key={index}>
-              <td className="px-6 py-6">
-                <div className="font-bold uppercase text-sm">
-                  {item.nombre} {item.apellido}
-                </div>
-                <div className="text-[11px] text-gray-500">
-                  DNI: {item.documento}
-                </div>
-                <div className="text-[11px] text-gray-400">
-                  {item.email}
-                </div>
+          {data.map((pedido: DashboardData, idx: number) => (
+            <tr key={idx}>
+              <td className="px-6 py-6 font-bold uppercase text-sm">
+                {pedido.envio?.nombre ?? "-"} {pedido.envio?.apellido ?? ""}
+                <div className="text-[11px] text-gray-500">DNI: {pedido.envio?.documento ?? "-"}</div>
+                <div className="text-[11px] text-gray-400">{pedido.envio?.email ?? "-"}</div>
               </td>
 
               <td className="px-6 py-6 text-[11px]">
                 <div className="flex flex-col gap-1">
-                  <span><strong>Tel:</strong> {item.telefono}</span>
-                  <span><strong>Dirección:</strong> {item.direccion}</span>
-                  <span>{item.ciudad}, {item.provincia}</span>
-                  <span><strong>CP:</strong> {item.codigo_postal}</span>
+                  <span><strong>Tel:</strong> {pedido.envio?.telefono ?? "-"}</span>
+                  <span><strong>Dirección:</strong> {pedido.envio?.direccion ?? "-"}</span>
+                  <span>{pedido.envio?.ciudad ?? "-"}, {pedido.envio?.provincia ?? "-"}</span>
+                  <span><strong>CP:</strong> {pedido.envio?.codigo_postal ?? "-"}</span>
                 </div>
               </td>
 
               <td className="px-6 py-6 text-[11px]">
-                {isUnit ? (
-                  <div className="flex justify-between">
-                    <span>{item.nombre_producto} x{item.cantidad}</span>
-                    <span>${Number(item.subtotal).toLocaleString("es-AR")}</span>
+                {pedido.productos.map((p: Producto) => (
+                  <div key={p.producto_id} className="flex justify-between">
+                    <span>{p.nombre_producto} x{p.cantidad}</span>
+                    <span>${Number(p.subtotal).toLocaleString("es-AR")}</span>
                   </div>
-                ) : (
-                  item.productos?.map((p: any) => (
-                    <div key={p.producto_id} className="flex justify-between">
-                      <span>{p.nombre_producto} x{p.cantidad}</span>
-                      <span>${Number(p.subtotal).toLocaleString("es-AR")}</span>
-                    </div>
-                  ))
-                )}
+                ))}
               </td>
 
               <td className="px-6 py-6 font-black">
-                ${Number(isUnit ? item.subtotal : item.total_pedido).toLocaleString("es-AR")}
+                ${Number(pedido.total_pedido).toLocaleString("es-AR")}
               </td>
 
               <td className="px-6 py-6">
-                <span className={`text-[10px] px-3 py-1 border rounded ${getStatusStyle(item.estado)}`}>
-                  {item.estado}
+                <span className={`text-[10px] px-3 py-1 border rounded ${getStatusStyle(pedido.envio?.envio_estado ?? "preparando")}`}>
+                  {pedido.envio?.envio_estado ?? "preparando"}
                 </span>
               </td>
             </tr>
@@ -271,12 +240,34 @@ function SectionTable({ title, data, getStatusStyle, isUnit }: any) {
   );
 }
 
-function MetricCard({ icon, label, value }: any) {
+function SectionProductStats({ data }: any) {
   return (
-    <div className="bg-white p-6 border border-gray-100 shadow-sm">
-      <div className="mb-2">{icon}</div>
-      <h3 className="text-xs text-gray-400 uppercase tracking-widest">{label}</h3>
-      <p className="text-2xl font-black">{value}</p>
+    <div className="bg-white border border-gray-100 shadow-sm overflow-x-auto mb-16">
+      <div className="p-8 border-b border-gray-50">
+        <h2 className="font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2">
+          <Package size={16} /> Productos Agrupados (Top vendidos)
+        </h2>
+      </div>
+
+      <table className="w-full text-left text-sm">
+        <thead className="text-[10px] uppercase tracking-widest text-gray-400 bg-gray-50">
+          <tr>
+            <th className="px-6 py-4">Producto</th>
+            <th className="px-6 py-4">Unidades Vendidas</th>
+            <th className="px-6 py-4">Total Generado</th>
+          </tr>
+        </thead>
+
+        <tbody className="divide-y divide-gray-100">
+          {data.map((item: any, idx: number) => (
+            <tr key={idx}>
+              <td className="px-6 py-6 font-bold">{item.nombre}</td>
+              <td className="px-6 py-6">{item.unidades}</td>
+              <td className="px-6 py-6 font-black">${Number(item.total).toLocaleString("es-AR")}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
