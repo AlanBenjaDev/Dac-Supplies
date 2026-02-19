@@ -1,9 +1,9 @@
 "use client";
 
-import { Search, ShoppingCart, LogOut, User, Menu } from "lucide-react";
+import { Search, ShoppingCart, LogOut, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation"; // 1. Importamos el hook de navegación
+import { usePathname } from "next/navigation";
 
 export enum Categorias {
   Proteinas = "proteinas",
@@ -22,7 +22,8 @@ export enum Categorias {
 export default function Header() {
   const [query, setQuery] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const pathname = usePathname(); 
+  const [cartCount, setCartCount] = useState(0);
+  const pathname = usePathname();
 
   useEffect(() => {
     const checkLogin = () => {
@@ -30,9 +31,26 @@ export default function Header() {
       const storedUser = localStorage.getItem("user");
       setIsLoggedIn(!!(token && storedUser));
     };
+
+    const updateCartCount = () => {
+      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+      const totalItems = cart.reduce(
+        (acc: number, item: any) => acc + (item.quantity || 1),
+        0
+      );
+      setCartCount(totalItems);
+    };
+
     checkLogin();
+    updateCartCount();
+
     window.addEventListener("storage", checkLogin);
-    return () => window.removeEventListener("storage", checkLogin);
+    window.addEventListener("storage", updateCartCount);
+
+    return () => {
+      window.removeEventListener("storage", checkLogin);
+      window.removeEventListener("storage", updateCartCount);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -44,20 +62,23 @@ export default function Header() {
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (query.trim()) window.location.href = `/search?q=${query}`;
+    if (query.trim()) {
+      window.location.href = `/search?q=${query}`;
+    }
   };
 
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
       <div className="flex items-center justify-between max-w-7xl mx-auto px-6 py-4 gap-8">
-        
+
+        {/* Logo */}
         <Link href="/" className="group flex flex-col">
           <div className="flex items-center gap-2">
             <div className="bg-black text-white px-2 py-1 font-black text-xl tracking-tighter transition-transform group-hover:scale-105">
-                DAC PRO
+              DAC PRO
             </div>
             <span className="font-light text-xs tracking-[0.3em] uppercase hidden sm:inline text-gray-500">
-                Suplementos
+              Suplementos
             </span>
           </div>
           <p className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-1 italic group-hover:text-black transition-colors">
@@ -65,7 +86,11 @@ export default function Header() {
           </p>
         </Link>
 
-        <form onSubmit={handleSearch} className="flex flex-1 max-w-lg items-center relative group">
+        {/* Buscador */}
+        <form
+          onSubmit={handleSearch}
+          className="flex flex-1 max-w-lg items-center relative group"
+        >
           <Search className="absolute left-4 h-4 w-4 text-gray-400 group-focus-within:text-black transition-colors" />
           <input
             type="text"
@@ -76,33 +101,48 @@ export default function Header() {
           />
         </form>
 
+        {/* Acciones */}
         <div className="flex items-center gap-6 text-gray-600">
+
+          {/* Carrito SIEMPRE visible */}
+          <Link
+            href="/Carrito"
+            className={`relative hover:text-black transition-colors ${
+              pathname === "/Carrito" ? "text-black" : ""
+            }`}
+          >
+            <ShoppingCart size={22} strokeWidth={1.5} />
+            {cartCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-emerald-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+                {cartCount}
+              </span>
+            )}
+          </Link>
+
+          {/* Usuario opcional */}
           {isLoggedIn ? (
-            <div className="flex items-center gap-5">
-              <Link href="/Carrito" className={`relative hover:text-black transition-colors ${pathname === '/Carrito' ? 'text-black font-black' : ''}`}>
-                <ShoppingCart size={22} strokeWidth={1.5} />
-                <span className="absolute -top-2 -right-2 bg-emerald-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">2</span>
-              </Link>
-              <button onClick={handleLogout} className="hover:text-red-500 transition-colors">
-                <LogOut size={20} strokeWidth={1.5} />
-              </button>
-            </div>
+            <button
+              onClick={handleLogout}
+              className="hover:text-red-500 transition-colors"
+              title="Cerrar sesión"
+            >
+              <LogOut size={20} strokeWidth={1.5} />
+            </button>
           ) : (
-            <div className="flex items-center gap-4">
-              <Link href="/Login" className={`text-[10px] font-bold uppercase tracking-widest hover:text-black transition-colors ${pathname === '/Login' ? 'text-black' : ''}`}>
-                Iniciá Sesión
-              </Link>
-              <Link
-                href="/Register"
-                className="bg-black text-white text-[10px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-full hover:bg-gray-800 transition-all shadow-lg shadow-black/10"
-              >
-               Creá tu cuenta
-              </Link>
-            </div>
+            <Link
+              href="/Login"
+              className={`hover:text-black transition-colors ${
+                pathname === "/Login" ? "text-black" : ""
+              }`}
+              title="Iniciar sesión"
+            >
+              <User size={20} strokeWidth={1.5} />
+            </Link>
           )}
         </div>
       </div>
 
+      {/* Categorías */}
       <nav className="border-t border-gray-50 bg-white/80 backdrop-blur-sm">
         <div className="flex items-center overflow-x-auto max-w-7xl mx-auto px-4 py-3 gap-8 no-scrollbar md:justify-center">
           {Object.entries(Categorias).map(([key, value]) => {
@@ -114,9 +154,9 @@ export default function Header() {
                 key={key}
                 href={href}
                 className={`whitespace-nowrap text-[10px] uppercase tracking-[0.15em] transition-all pb-1 border-b-2 font-bold ${
-                  isActive 
-                  ? "text-black border-black scale-105"
-                  : "text-gray-400 border-transparent hover:text-black" 
+                  isActive
+                    ? "text-black border-black scale-105"
+                    : "text-gray-400 border-transparent hover:text-black"
                 }`}
               >
                 {value.replace("_", " ")}

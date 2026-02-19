@@ -35,6 +35,7 @@ export default function ProductDetail() {
     codigo_postal: "",
     tipo_envio: "correo",
     telefono: "",
+    email: ""
    
 
   });
@@ -84,52 +85,86 @@ useEffect(() => {
     setEnvio((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleCreatePreference = async () => {
-    if (!token) {
-      toast.error("Iniciá sesión para comprar");
-      return;
-    }
-    if (!envio.ciudad || !envio.direccion || !envio.codigo_postal || !envio.nombre || !envio.apellido || !envio.provincia || !envio.documento) {
-      toast.error("Completá los datos de envío");
-      return;
-    }
-    try {
-      const res = await fetch(`${API_URL}/payments/checkout`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ product_id: product.id, quantity: 1, envio, color }),
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setPreferenceId(data.preferenceId);
-    } catch (error) {
-      toast.error("Error al iniciar el pago");
-    }
-  };
-
-  const agregarAlCarrito = async (producto_id: number) => {
-  if (product.stock <= 0) {
-    toast.error("Has alcanzado el límite de stock disponible para este producto");
+ const handleCreatePreference = async () => {
+  if (!envio.ciudad || !envio.direccion || !envio.codigo_postal || 
+      !envio.nombre || !envio.apellido || !envio.provincia || !envio.documento) {
+    toast.error("Completá los datos de envío");
     return;
   }
 
   try {
-    const res = await fetch(`${API_URL}/cart/add/${producto_id}`, {
+    const res = await fetch(`${API_URL}/payments/checkout`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ producto_id, cantidad: 1 }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : ""
+      },
+      body: JSON.stringify({
+        userId: null,
+        envio,
+        items: [
+          {
+            product_id: product.id,
+            quantity: 1,
+            color
+          }
+        ]
+      }),
     });
 
-    if (res.ok) {
-      toast.success("Agregado al carrito");
-      setProduct({ ...product, stock: product.stock - 1 });
-    }
+    if (!res.ok) throw new Error();
+
+    const data = await res.json();
+    setPreferenceId(data.preferenceId);
+
   } catch (error) {
-    toast.error("Error al conectar con el servidor");
+    toast.error("Error al iniciar el pago");
   }
 };
-
 const isBidon = product.producto.toLowerCase().includes("bidon");
+
+
+const agregarAlCarrito = () => {
+  if (!product) return;
+
+  if (product.stock <= 0) {
+    toast.error("Stock no disponible");
+    return;
+  }
+
+  if (isBidon && !color) {
+    toast.error("Seleccioná un color");
+    return;
+  }
+
+  const cartRaw = localStorage.getItem("cart");
+  const cart = cartRaw ? JSON.parse(cartRaw) : [];
+
+  const existingIndex = cart.findIndex(
+    (item: any) =>
+      item.product_id === product.id &&
+      item.color === (color ?? null)
+  );
+
+  if (existingIndex !== -1) {
+    cart[existingIndex].quantity += 1;
+  } else {
+    cart.push({
+      product_id: product.id,
+      nombre: product.producto,
+      precio: product.precio,
+      img_url: product.img_url,
+      quantity: 1,
+      color: color ?? null
+    });
+  }
+
+  localStorage.setItem("cart", JSON.stringify(cart));
+
+  toast.success("Producto agregado al carrito");
+};
+
+
 
   return (
     <main className="min-h-screen bg-[#FDFDFD] text-black pb-20">
@@ -234,6 +269,11 @@ const isBidon = product.producto.toLowerCase().includes("bidon");
                   className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
                   onChange={(e) => handleEnvioChange("apellido", e.target.value)}
                 />
+                 <input 
+                  type="text" placeholder="Correo Electronico" 
+                  className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
+                  onChange={(e) => handleEnvioChange("email", e.target.value)}
+                />
                 <input 
                   type="text" placeholder="Documento" 
                   className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
@@ -255,6 +295,7 @@ const isBidon = product.producto.toLowerCase().includes("bidon");
                   className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
                   onChange={(e) => handleEnvioChange("ciudad", e.target.value)}
                 />
+
                 <input 
                   type="text" placeholder="Código Postal" 
                   className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
@@ -285,7 +326,7 @@ const isBidon = product.producto.toLowerCase().includes("bidon");
             </button>
 
             <button
-              onClick={() => agregarAlCarrito(product.id)}
+                onClick={agregarAlCarrito}
               className="w-full bg-black hover:bg-gray-900 text-white font-bold py-5 rounded-sm transition-all flex items-center justify-center gap-3 text-sm tracking-widest uppercase active:scale-[0.98]"
             >
               <ShoppingCart size={18} /> Agregar al Carrito

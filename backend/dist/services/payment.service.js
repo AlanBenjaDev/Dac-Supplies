@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkoutService = exports.createPreferenceService = void 0;
+exports.checkoutService = exports.createPreferenceForCart = void 0;
 const mercadopago_1 = require("mercadopago");
 const mp_1 = require("../config/mp");
 const products_1 = require("../repositories/products");
@@ -14,22 +14,18 @@ const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const FRONTEND_URL = process.env.FRONTEND_URL || "";
 const BACKEND_URL = process.env.BACKEND_URL || "";
-const createPreferenceService = async ({ title, unit_price, quantity, pedidoId }) => {
-    if (!pedidoId) {
-        throw new Error("pedidoId es obligatorio");
-    }
+const createPreferenceForCart = async ({ pedidoId, items }) => {
     const preference = new mercadopago_1.Preference(mp_1.mpClient);
+    const mpItems = items.map(item => ({
+        id: String(item.producto.id),
+        title: item.producto.producto,
+        unit_price: Number(item.producto.precio),
+        quantity: Number(item.quantity),
+        currency_id: "ARS"
+    }));
     const response = await preference.create({
         body: {
-            items: [
-                {
-                    id: String(pedidoId),
-                    title,
-                    unit_price: Number(unit_price),
-                    quantity: Number(quantity),
-                    currency_id: "ARS"
-                }
-            ],
+            items: mpItems,
             external_reference: String(pedidoId),
             back_urls: {
                 success: `${FRONTEND_URL}/success`,
@@ -41,12 +37,29 @@ const createPreferenceService = async ({ title, unit_price, quantity, pedidoId }
     });
     return response.id;
 };
-exports.createPreferenceService = createPreferenceService;
-const checkoutService = async ({ userId, product_id, quantity, envio, color, userEmail }) => {
-    const producto = await products_1.productosRepo.findById(product_id);
-    if (!producto)
-        throw new Error("Producto no existe");
-    const total = producto.precio * quantity;
+exports.createPreferenceForCart = createPreferenceForCart;
+const checkoutService = async ({ userId, envio, items }) => {
+    if (!items || items.length === 0) {
+        throw new Error("No hay productos en el carrito");
+    }
+    let total = 0;
+    const productos = await Promise.all(items.map(item => products_1.productosRepo.findById(item.product_id)));
+    const productosMap = [];
+    items.forEach((item, index) => {
+        const producto = productos[index];
+        if (!producto) {
+            throw new Error(`Producto ${item.product_id} no existe`);
+        }
+        if (producto.stock < item.quantity) {
+            throw new Error(`Stock insuficiente para ${producto.nombre}`);
+        }
+        total += producto.precio * item.quantity;
+        productosMap.push({
+            producto,
+            quantity: item.quantity,
+            color: item.color ?? null
+        });
+    });
     const pedido = await pedidos_1.pedidosRepo.create({
         usuario_id: userId,
         total,
@@ -54,29 +67,18 @@ const checkoutService = async ({ userId, product_id, quantity, envio, color, use
     });
     await envios_1.enviosRepo.create({
         pedido_id: pedido.id,
-        nombre: envio.nombre,
-        apellido: envio.apellido,
-        documento: envio.documento,
-        provincia: envio.provincia,
-        telefono: envio.telefono,
-        ciudad: envio.ciudad,
-        direccion: envio.direccion,
-        codigo_postal: envio.codigo_postal,
-        tipo_envio: envio.tipo_envio,
-        email: userEmail,
-        color: color ?? null
+        ...envio
     });
-    await pedidosDetalles_1.pedidosDetalleRepo.create({
+    await Promise.all(productosMap.map(item => pedidosDetalles_1.pedidosDetalleRepo.create({
         pedido_id: pedido.id,
-        producto_id: product_id,
-        cantidad: quantity,
-        precio_unitario: producto.precio
-    });
-    const preferenceId = await (0, exports.createPreferenceService)({
-        title: producto.nombre,
-        unit_price: producto.precio,
-        quantity,
-        pedidoId: pedido.id
+        producto_id: item.producto.id,
+        cantidad: item.quantity,
+        precio_unitario: item.producto.precio,
+        color: item.color
+    })));
+    const preferenceId = await (0, exports.createPreferenceForCart)({
+        pedidoId: pedido.id,
+        items: productosMap
     });
     await pedidos_1.pedidosRepo.update(pedido.id, {
         preference_id: preferenceId

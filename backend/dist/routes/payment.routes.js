@@ -6,6 +6,6 @@ const token_1 = require("../middlewares/token");
 const package_controller_1 = require("../controllers/package.controller");
 const roles_1 = require("../middlewares/roles");
 const router = (0, express_1.Router)();
-router.post("/checkout", token_1.autenticarToken, payment_controller_1.checkoutController);
+router.post("/checkout", payment_controller_1.checkoutController);
 router.get("/dashboard", token_1.autenticarToken, (0, roles_1.authorizeRoles)(roles_1.RoleEstatus.admin), package_controller_1.dashboardController);
 exports.default = router;

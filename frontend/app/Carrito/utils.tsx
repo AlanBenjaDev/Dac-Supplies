@@ -1,9 +1,10 @@
 export interface Carrito {
-  id: number;
-  producto: string;
+  product_id: number;
+  nombre: string;
   precio: number;
+  quantity: number;
   img_url: string;
-  cantidad: number;   
+  color?: string | null;
 }
 export const calcularTotal = (carrito: Carrito[] = []): number =>
-  carrito.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
+  carrito.reduce((acc, item) => acc + item.precio * item.quantity, 0);

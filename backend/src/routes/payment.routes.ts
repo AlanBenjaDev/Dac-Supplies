@@ -6,7 +6,7 @@ import { authorizeRoles, RoleEstatus } from "../middlewares/roles";
 
 const router = Router();
 
-router.post("/checkout", autenticarToken, checkoutController);
+router.post("/checkout",  checkoutController);
 router.get("/dashboard",autenticarToken, authorizeRoles(RoleEstatus.admin), dashboardController);
 
 export default router;
