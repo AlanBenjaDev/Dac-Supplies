@@ -43,34 +43,36 @@ useEffect(() => {
     fetchProducts();
   }, []);
 
-const agregarAlCarrito = async (producto_id: number) => {
-    if (!token) {
-      toast.error("Iniciá sesión primero");
-      return;
-    }
+const agregarAlCarrito = (product: Product) => {
+  if (product.stock <= 0) {
+    toast.error("Stock no disponible");
+    return;
+  }
 
-    try {
-      const res = await fetch(`${API_URL}/cart/add/${producto_id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ producto_id, cantidad: 1 }),
-      });
+  const cartRaw = localStorage.getItem("cart");
+  const cart = cartRaw ? JSON.parse(cartRaw) : [];
 
-      const result = await res.json(); // Obtenemos el JSON del backend
+  const existingIndex = cart.findIndex(
+    (item: any) => item.product_id === product.id
+  );
 
-      if (res.ok) {
-        toast.success("Agregado al carrito");
-      } else {
-        // Aquí capturamos el mensaje: "Solo podés comprar un máximo de 5 unidades..."
-        toast.error(result.error || "Límite alcanzado", {
-          description: result.mensaje, 
-          style: { background: '#fff', color: '#000', border: '1px solid #000' } 
-        });
-      }
-    } catch (error) {
-      toast.error("Error de red", { description: "No se pudo conectar con el servidor." });
-    }
-}; 
+  if (existingIndex !== -1) {
+    cart[existingIndex].quantity += 1;
+  } else {
+    cart.push({
+      product_id: product.id,
+      nombre: product.producto,
+      precio: product.precio,
+      img_url: product.img_url,
+      quantity: 1
+    });
+  }
+
+  localStorage.setItem("cart", JSON.stringify(cart));
+  toast.success("Producto agregado al carrito");
+};
+
+
 
 
   if (error) return (
@@ -156,7 +158,8 @@ const agregarAlCarrito = async (producto_id: number) => {
                   </div>
 
                   <button 
-                  onClick={agregarAlCarrito.bind(null, product.id)}
+                  onClick={() => agregarAlCarrito(product)}
+
                   className="h-10 w-10 bg-black hover:bg-gray-800 text-white flex items-center justify-center rounded-full transition-all active:scale-90 shadow-lg shadow-black/10">
                     <ShoppingCart size={18} strokeWidth={2.5} />
                   </button>
