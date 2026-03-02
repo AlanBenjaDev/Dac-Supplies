@@ -7,14 +7,15 @@ exports.deleteProductService = exports.obtenerProductosPorCategoria = exports.ge
 const db_1 = __importDefault(require("../config/db"));
 const createProductService = async (product) => {
     const [result] = await db_1.default.query(`INSERT INTO productos 
-     (producto, descripcion, precio, stock, categoria, img_url)
-     VALUES (?, ?, ?, ?, ?, ?)`, [
+     (producto, descripcion, precio, stock, categoria, img_url, tipo)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`, [
         product.producto,
         product.descripcion,
         product.precio,
         product.stock,
         product.categoria,
         product.imagen,
+        product.tipo
     ]);
     return {
         id: result.insertId,
@@ -23,7 +24,8 @@ const createProductService = async (product) => {
         precio: product.precio,
         stock: product.stock,
         categoria: product.categoria,
-        img_url: product.imagen
+        img_url: product.imagen,
+        tipo: product.tipo
     };
 };
 exports.createProductService = createProductService;

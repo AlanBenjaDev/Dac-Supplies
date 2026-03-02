@@ -10,6 +10,7 @@ export interface Producto  {
   stock: number;
   categoria: string;
   img_url: string;
+  tipo: string;
 
 }
 

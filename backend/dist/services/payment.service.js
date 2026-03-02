@@ -43,42 +43,42 @@ const checkoutService = async ({ userId, envio, items }) => {
         throw new Error("No hay productos en el carrito");
     }
     let total = 0;
-    const productos = await Promise.all(items.map(item => products_1.productosRepo.findById(item.product_id)));
-    const productosMap = [];
-    items.forEach((item, index) => {
-        const producto = productos[index];
-        if (!producto) {
-            throw new Error(`Producto ${item.product_id} no existe`);
-        }
-        if (producto.stock < item.quantity) {
-            throw new Error(`Stock insuficiente para ${producto.nombre}`);
-        }
-        total += producto.precio * item.quantity;
-        productosMap.push({
-            producto,
-            quantity: item.quantity,
-            color: item.color ?? null
-        });
-    });
+    const itemsParaMP = [];
     const pedido = await pedidos_1.pedidosRepo.create({
         usuario_id: userId,
-        total,
+        total: 0,
         estado: "pendiente"
     });
     await envios_1.enviosRepo.create({
         pedido_id: pedido.id,
         ...envio
     });
-    await Promise.all(productosMap.map(item => pedidosDetalles_1.pedidosDetalleRepo.create({
-        pedido_id: pedido.id,
-        producto_id: item.producto.id,
-        cantidad: item.quantity,
-        precio_unitario: item.producto.precio,
-        color: item.color
-    })));
+    for (const item of items) {
+        const producto = await products_1.productosRepo.findById(item.product_id);
+        if (!producto) {
+            throw new Error(`Producto ${item.product_id} no existe`);
+        }
+        if (producto.stock < item.quantity) {
+            throw new Error(`Stock insuficiente para ${producto.producto}`);
+        }
+        itemsParaMP.push({
+            producto: producto,
+            quantity: item.quantity
+        });
+        total += producto.precio * item.quantity;
+        const notas = item.opciones?.info_adicional || null;
+        await pedidosDetalles_1.pedidosDetalleRepo.create({
+            pedido_id: pedido.id,
+            producto_id: producto.id,
+            cantidad: item.quantity,
+            precio_unitario: producto.precio,
+            opciones_texto: notas
+        });
+    }
+    await pedidos_1.pedidosRepo.update(pedido.id, { total });
     const preferenceId = await (0, exports.createPreferenceForCart)({
         pedidoId: pedido.id,
-        items: productosMap
+        items: itemsParaMP
     });
     await pedidos_1.pedidosRepo.update(pedido.id, {
         preference_id: preferenceId

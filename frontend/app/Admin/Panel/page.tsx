@@ -22,6 +22,11 @@ export enum Categorias {
   quemadores_grasa = "quemadores_grasa",
   otros = "otros",
 }
+export enum Tipos {
+  simple = "simple",
+  combo = "combo",
+  bidon = "bidon"
+}
 
 interface Producto {
   id: string;
@@ -31,6 +36,7 @@ interface Producto {
   stock: number;
   img_url: string;
   categoria: string;
+  tipo: string; 
 }
 
 export default function AdminProducts() {
@@ -115,6 +121,7 @@ export default function AdminProducts() {
     formData.append("precio", data.precio);
     formData.append("stock", data.stock);
     formData.append("categoria", data.categoria);
+    formData.append("tipo", data.tipo);
     formData.append("imagen", selectedFile);
 
     try {
@@ -175,6 +182,18 @@ export default function AdminProducts() {
             <div className="relative">
               <select {...register("categoria")} className="w-full bg-gray-50 border-none p-4 text-sm text-black rounded-sm focus:ring-1 focus:ring-black outline-none appearance-none cursor-pointer">
                 {Object.entries(Categorias).map(([key, value]) => (
+                  <option key={key} value={value}>{value.replace(/_/g, ' ').toUpperCase()}</option>
+                ))}
+              </select>
+              <Layers size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none" />
+            </div>
+          </div>
+
+            <div className="flex flex-col gap-2">
+            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 ml-1">Tipo</label>
+            <div className="relative">
+              <select {...register("tipo")} className="w-full bg-gray-50 border-none p-4 text-sm text-black rounded-sm focus:ring-1 focus:ring-black outline-none appearance-none cursor-pointer">
+                {Object.entries(Tipos).map(([key, value]) => (
                   <option key={key} value={value}>{value.replace(/_/g, ' ').toUpperCase()}</option>
                 ))}
               </select>

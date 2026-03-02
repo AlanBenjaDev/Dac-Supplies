@@ -55,12 +55,11 @@ class PaqArService {
         try {
             const response = await axios_1.default.get(`${this.baseUrl}/orders/${orderId}/label`, {
                 headers: this.getHeaders(),
-                responseType: 'arraybuffer' // Correcto para archivos binarios
+                responseType: 'arraybuffer'
             });
             return response.data;
         }
         catch (error) {
-            // PAQ.AR a veces devuelve el error en el header si el PDF no está listo
             throw new Error("La etiqueta aún no está disponible en el servidor del Correo");
         }
     }

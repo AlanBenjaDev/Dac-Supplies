@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { initMercadoPago, Wallet } from "@mercadopago/sdk-react";
-import { ShoppingCart, ShieldCheck, Truck, ArrowLeft, CheckCircle2, Activity, Info } from "lucide-react";
+import { ShoppingCart, ShieldCheck, Truck, ArrowLeft, CheckCircle2, Activity, Info, Star } from "lucide-react";
 import Link from "next/link";
 
 interface Product {
@@ -13,55 +13,45 @@ interface Product {
   precio: number;
   img_url: string;
   stock: number;
+  tipo: string;
 }
-
-
 
 export default function ProductDetail() {
   const { id } = useParams();
+
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [preferenceId, setPreferenceId] = useState<string | null>(null);
+  const [creatingPreference, setCreatingPreference] = useState(false);
   const [token, setToken] = useState<string | null>(null);
+  
   const [color, setColor] = useState<string | null>(null);
+  const [opcionesCombo, setOpcionesCombo] = useState<Record<string, string>>({});
+  const [notasExtra, setNotasExtra] = useState("");
 
   const [envio, setEnvio] = useState({
-    nombre:"",
-    apellido:"",
-    documento:"",
-    provincia: "",
-    ciudad: "",
-    direccion: "",
-    codigo_postal: "",
-    tipo_envio: "correo",
-    telefono: "",
-    email: ""
-   
-
+    nombre: "", apellido: "", documento: "", provincia: "",
+    ciudad: "", direccion: "", codigo_postal: "", tipo_envio: "correo",
+    telefono: "", email: ""
   });
 
-
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+  const saboresDisponibles = ["Vainilla", "Chocolate", "Frutilla", "Neutro", "Uva", "Limón"];
 
-useEffect(() => {
-  if (process.env.NEXT_PUBLIC_MP_PUBLIC_KEY) {
-    initMercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY, {
-      locale: "es-AR",
-    });
-  }
-}, []);
-
-
-  
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_MP_PUBLIC_KEY) {
+      initMercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY, { locale: "es-AR" });
+    }
+  }, []);
 
   useEffect(() => {
     const storedToken = localStorage.getItem("accessToken");
     setToken(storedToken);
-    
+
     const fetchProduct = async () => {
       try {
         const res = await fetch(`${API_URL}/products/products/${id}`);
-        if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
+        if (!res.ok) throw new Error();
         const data = await res.json();
         setProduct(data);
       } catch (err) {
@@ -73,272 +63,160 @@ useEffect(() => {
     fetchProduct();
   }, [id, API_URL]);
 
-  if (loading) return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center">
-      <div className="w-10 h-10 border-2 border-gray-100 border-t-black rounded-full animate-spin"></div>
-    </div>
-  );
+  const isBidon = product?.tipo === "bidon";
+  const isCombo = product?.tipo === "combo";
 
-  if (!product) return <div className="bg-white min-h-screen text-black p-10 font-bold">Producto no encontrado.</div>;
-
-  const handleEnvioChange = (field: string, value: string) => {
-    setEnvio((prev) => ({ ...prev, [field]: value }));
+  const detectarComponentes = () => {
+    if (!product) return [];
+    const nombre = product.producto.toLowerCase();
+    const posibles = ["Proteína", "Creatina", "BCAA", "Pre-Workout"];
+    return posibles.filter(p => nombre.includes(p.toLowerCase()));
   };
 
- const handleCreatePreference = async () => {
-  if (!envio.ciudad || !envio.direccion || !envio.codigo_postal || 
-      !envio.nombre || !envio.apellido || !envio.provincia || !envio.documento) {
-    toast.error("Completá los datos de envío");
-    return;
-  }
+  const componentesDetectados = detectarComponentes();
 
-  try {
-    const res = await fetch(`${API_URL}/payments/checkout`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: token ? `Bearer ${token}` : ""
-      },
-      body: JSON.stringify({
-        userId: null,
-        envio,
-        items: [
-          {
-            product_id: product.id,
+  // ESTA ES LA ACLARACIÓN DINÁMICA QUE ME PEDISTE
+  const obtenerAclaracionNotas = () => {
+    if (isBidon) return "Aclará aquí si tenés alguna preferencia de entrega o detalle del color.";
+    if (isCombo) return "Podés detallar aquí sabores específicos o si querés cambiar algún componente (sujeto a stock).";
+    return "Aclará aquí el sabor, color o detalles específicos de tu pedido.";
+  };
+
+  const handleCreatePreference = async () => {
+    if (!envio.nombre || !envio.direccion || !envio.telefono) {
+      toast.error("Completá los datos de despacho");
+      return;
+    }
+
+    let info_adicional = "";
+    if (isBidon && color) info_adicional = `Color: ${color}`;
+    if (isCombo) {
+      info_adicional = Object.entries(opcionesCombo)
+        .map(([key, val]) => `${key}: ${val}`)
+        .join(", ");
+    }
+
+    if (notasExtra) info_adicional += (info_adicional ? " | " : "") + `Notas: ${notasExtra}`;
+
+    try {
+      setCreatingPreference(true);
+      const res = await fetch(`${API_URL}/payments/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: token ? `Bearer ${token}` : "" },
+        body: JSON.stringify({
+          userId: null,
+          envio,
+          items: [{
+            product_id: product?.id,
             quantity: 1,
-            color
-          }
-        ]
-      }),
-    });
+            opciones: { info_adicional }
+          }]
+        })
+      });
+      const data = await res.json();
+      setPreferenceId(data.preferenceId);
+    } catch (error) {
+      toast.error("Error al procesar pago");
+    } finally {
+      setCreatingPreference(false);
+    }
+  };
 
-    if (!res.ok) throw new Error();
-
-    const data = await res.json();
-    setPreferenceId(data.preferenceId);
-
-  } catch (error) {
-    toast.error("Error al iniciar el pago");
-  }
-};
-const isBidon = product.producto.toLowerCase().includes("bidon");
-
-
-const agregarAlCarrito = () => {
-  if (!product) return;
-
-  if (product.stock <= 0) {
-    toast.error("Stock no disponible");
-    return;
-  }
-
-  if (isBidon && !color) {
-    toast.error("Seleccioná un color");
-    return;
-  }
-
-  const cartRaw = localStorage.getItem("cart");
-  const cart = cartRaw ? JSON.parse(cartRaw) : [];
-
-  const existingIndex = cart.findIndex(
-    (item: any) =>
-      item.product_id === product.id &&
-      item.color === (color ?? null)
-  );
-
-  if (existingIndex !== -1) {
-    cart[existingIndex].quantity += 1;
-  } else {
-    cart.push({
-      product_id: product.id,
-      nombre: product.producto,
-      precio: product.precio,
-      img_url: product.img_url,
-      quantity: 1,
-      color: color ?? null
-    });
-  }
-
-  localStorage.setItem("cart", JSON.stringify(cart));
-
-  toast.success("Producto agregado al carrito");
-};
-
-
+  if (loading) return <div className="min-h-screen flex items-center justify-center animate-pulse">Cargando...</div>;
+  if (!product) return <div>Producto no encontrado</div>;
 
   return (
     <main className="min-h-screen bg-[#FDFDFD] text-black pb-20">
       <div className="max-w-7xl mx-auto px-6 py-8">
         <Link href="/" className="group flex items-center gap-2 text-gray-400 hover:text-black transition-colors text-[10px] font-bold uppercase tracking-[0.2em]">
-          <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> 
-          Volver al catálogo
+          <ArrowLeft size={14} /> Volver al catálogo
         </Link>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
-        
-        <div className="lg:sticky lg:top-24 space-y-4">
-            <div className="relative bg-white border border-gray-100 rounded-sm p-12 flex items-center justify-center min-h-[500px] shadow-sm">
-              <div className="absolute top-6 left-6 flex flex-col gap-2">
-                  <span className="bg-black text-white text-[9px] font-bold px-3 py-1 tracking-widest uppercase">Original DAC</span>
-                  {product.stock < 5 && <span className="bg-red-50 text-red-600 text-[9px] font-bold px-3 py-1 tracking-widest uppercase">Últimas unidades</span>}
-              </div>
-              <img
-                  src={product.img_url}
-                  alt={product.producto}
-                  className="w-full h-auto max-h-[450px] object-contain mix-blend-multiply"
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-                <div className="bg-white border border-gray-100 p-4 rounded-sm text-center">
-                    <CheckCircle2 size={16} className="mx-auto mb-2 text-emerald-600" />
-                    <p className="text-[10px] font-bold uppercase tracking-tighter text-gray-500">Pureza Testeada</p>
-                </div>
-                <div className="bg-white border border-gray-100 p-4 rounded-sm text-center">
-                    <ShieldCheck size={16} className="mx-auto mb-2 text-emerald-600" />
-                    <p className="text-[10px] font-bold uppercase tracking-tighter text-gray-500">Grado Pharma</p>
-                </div>
-                <div className="bg-white border border-gray-100 p-4 rounded-sm text-center">
-                    <Activity size={16} className="mx-auto mb-2 text-emerald-600" />
-                    <p className="text-[10px] font-bold uppercase tracking-tighter text-gray-500">Alto Rendimiento</p>
-                </div>
-            </div>
+      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16">
+        <div className="bg-white border border-gray-100 rounded-sm p-12 flex items-center justify-center shadow-sm h-fit">
+          <img src={product.img_url} alt={product.producto} className="max-h-[450px] object-contain" />
         </div>
 
         <div className="flex flex-col">
-          <div className="mb-8">
-            <h1 className="text-5xl font-black mb-4 tracking-tighter leading-none uppercase">{product.producto}</h1>
-            <div className="flex items-center gap-4 mb-6">
-                <span className="text-3xl font-light text-gray-900">
-                  ${Number(product.precio).toLocaleString('es-AR')}
-                </span>
-                <div className="h-4 w-[1px] bg-gray-200" />
-                <span className="text-xs font-bold text-emerald-600 uppercase tracking-widest">En Stock</span>
+          <h1 className="text-5xl font-black mb-4 uppercase tracking-tighter leading-none">{product.producto}</h1>
+          <p className="text-3xl font-light mb-8">${Number(product.precio).toLocaleString("es-AR")}</p>
+
+          {isBidon && (
+            <div className="mb-8">
+              <h3 className="text-xs font-bold uppercase mb-3 text-gray-400 tracking-widest">Seleccionar Color</h3>
+              <div className="flex gap-4">
+                {["Negro", "Azul", "Rosa", "Amarillo"].map((c) => (
+                  <button 
+                    key={c} onClick={() => setColor(c)}
+                    className={`px-4 py-2 border text-[10px] font-bold uppercase transition-all ${color === c ? "bg-black text-white" : "bg-white text-gray-300 border-gray-100"}`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
             </div>
-            <p className="text-gray-500 leading-relaxed text-lg font-light italic">
-              {product.descripcion}
+          )}
+
+          {isCombo && (
+            <div className="mb-8 p-6 bg-gray-50 border border-gray-100 rounded-sm space-y-4">
+              <h3 className="text-xs font-bold uppercase flex items-center gap-2"><Star size={14} /> Sabores del Combo</h3>
+              {componentesDetectados.map((label) => (
+                <div key={label}>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase">Sabor de {label}</label>
+                  <select 
+                    className="w-full bg-white border-none p-3 text-sm mt-1 outline-none"
+                    onChange={(e) => setOpcionesCombo({...opcionesCombo, [label]: e.target.value})}
+                  >
+                    <option value="">Seleccionar sabor...</option>
+                    {saboresDisponibles.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* SECCIÓN DE NOTAS CON ACLARACIÓN (LO QUE PEDISTE) */}
+          <div className="mb-8">
+            <div className="flex justify-between items-end mb-1">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Notas del pedido</label>
+              <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-tighter">
+                {isCombo ? "Sabor de Proteína / Creatina" : isBidon ? "Color del Bidón" : "Preferencia de Sabor/Color"}
+              </span>
+            </div>
+            <textarea 
+              className="w-full bg-gray-50 border border-gray-100 p-4 text-sm outline-none rounded-sm min-h-[100px] focus:bg-white focus:border-black transition-all"
+              placeholder={obtenerAclaracionNotas()}
+              onChange={(e) => setNotasExtra(e.target.value)}
+            />
+            <p className="text-[9px] text-gray-400 mt-2 uppercase leading-relaxed">
+              * Si olvidaste seleccionar arriba, podés escribir el <b>sabor de la proteína, color de bidón o sabor de creatina</b> aquí mismo.
             </p>
           </div>
-          {isBidon && (
-  <div className="mb-8">
-    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-600 mb-3">
-      Elegí un color
-    </h3>
 
-    <div className="flex gap-4">
-      {[
-        { name: "Amarillo", value: "amarillo", class: "bg-yellow-400" },
-        { name: "Negro", value: "negro", class: "bg-black" },
-        { name: "Rosa", value: "rosa", class: "bg-pink-400" },
-        { name: "Azul", value: "azul", class: "bg-blue-500" },
-      ].map((c) => (
-        <button
-          key={c.value}
-          onClick={() => setColor(c.value)}
-          className={`w-10 h-10 rounded-sm border-2 transition-all
-            ${c.class}
-            ${color === c.value ? "border-black scale-110" : "border-gray-200"}
-          `}
-          title={c.name}
-        />
-      ))}
-    </div>
+          <div className="bg-white border border-gray-100 p-8 mb-8 shadow-sm rounded-sm">
+             <h3 className="text-[11px] font-bold uppercase mb-6 flex items-center gap-2"><Truck size={16}/> Datos de Entrega</h3>
+             <div className="grid grid-cols-2 gap-4 mb-4">
+                <input type="text" placeholder="Nombre" className="bg-gray-50 p-4 text-sm outline-none focus:bg-white" onChange={(e) => setEnvio({...envio, nombre: e.target.value})} />
+                <input type="text" placeholder="Apellido" className="bg-gray-50 p-4 text-sm outline-none focus:bg-white" onChange={(e) => setEnvio({...envio, apellido: e.target.value})} />
+             </div>
+             <input type="text" placeholder="Dirección y Altura" className="w-full bg-gray-50 p-4 text-sm outline-none mb-4 focus:bg-white" onChange={(e) => setEnvio({...envio, direccion: e.target.value})} />
+             <input type="text" placeholder="Teléfono de contacto" className="w-full bg-gray-50 p-4 text-sm outline-none focus:bg-white" onChange={(e) => setEnvio({...envio, telefono: e.target.value})} />
+          </div>
 
-    {!color && (
-      <p className="text-[10px] text-red-500 mt-2 uppercase font-bold tracking-widest">
-        Seleccioná un color para continuar
-      </p>
-    )}
-  </div>
-)}
+          <button 
+            onClick={handleCreatePreference} 
+            disabled={creatingPreference}
+            className="w-full bg-[#009ee3] text-white font-bold py-5 uppercase text-sm tracking-widest hover:brightness-110 transition-all disabled:opacity-50 shadow-lg shadow-blue-100"
+          >
+            {creatingPreference ? "Procesando..." : "Finalizar Compra"}
+          </button>
 
-
-          <div className="bg-white border border-gray-100 rounded-sm p-8 mb-8 shadow-sm">
-            <h3 className="text-black font-bold mb-6 uppercase text-[11px] tracking-[0.2em] flex items-center gap-2">
-              <Truck size={16} /> Información de Despacho
-            </h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <input 
-                  type="text" placeholder="Nombre" 
-                  className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
-                  onChange={(e) => handleEnvioChange("nombre", e.target.value)}
-                />
-                <input 
-                  type="text" placeholder="Apellido" 
-                  className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
-                  onChange={(e) => handleEnvioChange("apellido", e.target.value)}
-                />
-                 <input 
-                  type="text" placeholder="Correo Electronico" 
-                  className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
-                  onChange={(e) => handleEnvioChange("email", e.target.value)}
-                />
-                <input 
-                  type="text" placeholder="Documento" 
-                  className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
-                  onChange={(e) => handleEnvioChange("documento", e.target.value)}
-                />
-                 <input 
-                  type="text" placeholder="Numero de telefono" 
-                  className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
-                  onChange={(e) => handleEnvioChange("telefono", e.target.value)}
-                />
-          
-                <input 
-                  type="text" placeholder="Provincia" 
-                  className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
-                  onChange={(e) => handleEnvioChange("provincia", e.target.value)}
-                />
-                <input 
-                  type="text" placeholder="Ciudad" 
-                  className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
-                  onChange={(e) => handleEnvioChange("ciudad", e.target.value)}
-                />
-
-                <input 
-                  type="text" placeholder="Código Postal" 
-                  className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
-                  onChange={(e) => handleEnvioChange("codigo_postal", e.target.value)}
-                />
-              </div>
-              <input 
-                type="text" placeholder="Dirección Completa" 
-                className="w-full bg-gray-50 border-none p-4 text-sm rounded-sm focus:ring-1 focus:ring-black transition-all"
-                onChange={(e) => handleEnvioChange("direccion", e.target.value)}
-              />
-              
-              {Number(product.precio) > 15000 && (
-                <div className="flex items-center gap-2 text-emerald-600 pt-2">
-                  <Info size={14} />
-                  <p className="text-[10px] font-bold uppercase tracking-widest">Envío gratis habilitado para esta orden</p>
-                </div>
-              )}
+          {preferenceId && (
+            <div className="mt-6 border-t pt-6 animate-in fade-in duration-500">
+              <Wallet initialization={{ preferenceId }} />
             </div>
-          </div>
-
-          <div className="space-y-3">
-            <button
-              onClick={handleCreatePreference}
-              className="w-full bg-[#009ee3] hover:brightness-110 text-white font-bold py-5 rounded-sm transition-all flex items-center justify-center gap-3 text-sm tracking-widest uppercase"
-            >
-              Comprar Ahora
-            </button>
-
-            <button
-                onClick={agregarAlCarrito}
-              className="w-full bg-black hover:bg-gray-900 text-white font-bold py-5 rounded-sm transition-all flex items-center justify-center gap-3 text-sm tracking-widest uppercase active:scale-[0.98]"
-            >
-              <ShoppingCart size={18} /> Agregar al Carrito
-            </button>
-
-            {preferenceId && (
-              <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-sm">
-                <p className="text-[10px] text-blue-600 font-bold uppercase text-center mb-4 tracking-widest">Plataforma segura Mercado Pago</p>
-                <Wallet initialization={{ preferenceId }} />
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </main>

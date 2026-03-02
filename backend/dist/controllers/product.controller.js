@@ -9,9 +9,7 @@ function setWebSocketServer(wsServer) {
 }
 const createProductController = async (req, res) => {
     try {
-        console.log("REQ.BODY:", JSON.stringify(req.body, null, 2));
-        console.log("REQ.FILE:", req.file ? JSON.stringify(req.file, null, 2) : null);
-        const { producto, descripcion, precio, stock, categoria } = req.body;
+        const { producto, descripcion, precio, stock, categoria, tipo } = req.body;
         const userId = req.user?.id;
         if (!userId)
             return res.status(401).json({ error: "Usuario no autenticado" });
@@ -26,6 +24,7 @@ const createProductController = async (req, res) => {
             stock: Number(stock),
             categoria,
             imagen: req.file.path,
+            tipo
         });
         res.status(201).json({ message: "Producto creado exitosamente", data: product });
     }

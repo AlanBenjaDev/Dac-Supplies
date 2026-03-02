@@ -10,6 +10,7 @@ export interface CreateProductDTO {
   stock: number;
   categoria: string;
   imagen: string;
+  tipo: string;
 
 }
 
@@ -21,8 +22,8 @@ export const createProductService = async (
 
   const [result] = await db.query<ResultSetHeader>(
     `INSERT INTO productos 
-     (producto, descripcion, precio, stock, categoria, img_url)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+     (producto, descripcion, precio, stock, categoria, img_url, tipo)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
       product.producto,
       product.descripcion,
@@ -30,6 +31,7 @@ export const createProductService = async (
       product.stock,
       product.categoria,
       product.imagen,
+      product.tipo
   
     ]
   );
@@ -41,7 +43,9 @@ export const createProductService = async (
     precio: product.precio,
     stock: product.stock,
     categoria: product.categoria,
-    img_url: product.imagen
+    img_url: product.imagen,
+    tipo: product.tipo
+
     
   };
 };
