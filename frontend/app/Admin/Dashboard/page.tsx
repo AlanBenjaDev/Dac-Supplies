@@ -1,48 +1,48 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
-import {
-  Package,
-  Truck,
-  CheckCircle,
+import { 
+  Package, 
+  CheckCircle, 
+  TrendingUp, 
+  Loader2, 
+  Activity, 
+  Layers, 
+  Tag, 
   Clock,
-  TrendingUp,
-  Loader2,
-  Activity,
+  User,
+  Phone,
+  Mail,
+  CreditCard
 } from "lucide-react";
 
-interface Producto {
-  producto_id: number;
-  nombre_producto: string;
-  cantidad: number;
-  subtotal: number;
-}
-
-interface DashboardData {
+interface Pedido {
   pedido_id: number;
   total_pedido: number;
-  estado_pedido: string;
+  estado_pago: string;
   fecha_envio: string;
-  envio?: {
-    envio_id: number;
+  envio: {
     nombre: string;
     apellido: string;
-    documento: string;
-    telefono: string;
+    documento: string; // <-- Agregado
     provincia: string;
-    ciudad: string | null;
-    direccion: string | null;
-    codigo_postal: string | null;
-    email: string;
-    envio_estado: "preparando" | "en_camino" | "entregado";
+    ciudad: string;
+    direccion: string;
+    email: string; // <-- Agregado
+    telefono: string; // <-- Agregado
   };
-  productos: Producto[];
+  productos: {
+    detalle_id: number;
+    nombre_producto: string;
+    cantidad: number;
+    precio_unitario: number;
+    subtotal: number;
+    personalizacion?: string | null;
+  }[];
 }
 
 export default function AdminDashboard() {
-  const [data, setData] = useState<DashboardData[]>([]);
+  const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   useEffect(() => {
@@ -55,10 +55,10 @@ export default function AdminDashboard() {
         });
         if (!res.ok) throw new Error("Error servidor");
         const result = await res.json();
-        setData(result || []);
+        setPedidos(result || []);
       } catch (err) {
         console.error("Dashboard error:", err);
-        setData([]);
+        setPedidos([]);
       } finally {
         setLoading(false);
       }
@@ -66,206 +66,190 @@ export default function AdminDashboard() {
     fetchDashboard();
   }, [API_URL]);
 
-  // 🔹 Métricas de pedidos
-  const pedidosPorEstado = useMemo(() => {
-    const map = { preparando: 0, en_camino: 0, entregado: 0 };
-    data.forEach((pedido) => {
-      const estado = pedido.envio?.envio_estado ?? "preparando";
-      map[estado] = (map[estado] || 0) + 1;
+  const ingresosTotales = useMemo(() => 
+    pedidos.reduce((acc, curr) => acc + Number(curr.total_pedido), 0), [pedidos]);
+  
+  const totalArticulosVendidos = useMemo(() => 
+    pedidos.reduce((acc, p) => acc + p.productos.reduce((sum, pr) => sum + pr.cantidad, 0), 0), [pedidos]);
+
+  const statsSeparadas = useMemo(() => {
+    const combos: Record<string, any> = {};
+    const normales: Record<string, any> = {};
+    pedidos.forEach((p) => {
+      p.productos.forEach((pr) => {
+        const esCombo = pr.nombre_producto.toUpperCase().includes("COMBO");
+        const target = esCombo ? combos : normales;
+        if (!target[pr.nombre_producto]) target[pr.nombre_producto] = { unidades: 0, total: 0 };
+        target[pr.nombre_producto].unidades += pr.cantidad;
+        target[pr.nombre_producto].total += Number(pr.subtotal);
+      });
     });
-    return map;
-  }, [data]);
+    const format = (obj: any) => Object.entries(obj).map(([nombre, s]: any) => ({ nombre, ...s })).sort((a, b) => b.unidades - a.unidades);
+    return { listadoCombos: format(combos), listadoNormales: format(normales) };
+  }, [pedidos]);
 
-  const ingresosHoy = useMemo(() => {
-    const hoy = new Date().toDateString();
-    return data
-      .filter((e) => new Date(e.fecha_envio).toDateString() === hoy)
-      .reduce((acc, curr) => acc + Number(curr.total_pedido || 0), 0);
-  }, [data]);
-
-  const ingresosTotales = useMemo(() => {
-    return data.reduce((acc, curr) => acc + Number(curr.total_pedido || 0), 0);
-  }, [data]);
-
-  // 🔹 Productos individuales
-  const productosIndividuales = useMemo(() => {
-    return data.flatMap((pedido) =>
-      pedido.productos.map((prod) => ({
-        ...prod,
-      }))
-    );
-  }, [data]);
-
-  // 🔹 Productos agrupados
-  const productosAgrupados = useMemo(() => {
-    const mapa: Record<string, { unidades: number; total: number }> = {};
-    productosIndividuales.forEach((prod) => {
-      if (!mapa[prod.nombre_producto]) {
-        mapa[prod.nombre_producto] = { unidades: 0, total: 0 };
-      }
-      mapa[prod.nombre_producto].unidades += prod.cantidad;
-      mapa[prod.nombre_producto].total += Number(prod.subtotal);
-    });
-    return Object.entries(mapa)
-      .map(([nombre, stats]) => ({ nombre, ...stats }))
-      .sort((a, b) => b.unidades - a.unidades); // Top vendidos primero
-  }, [productosIndividuales]);
-
-  const getStatusStyle = (estado: string) => {
-    switch (estado) {
-      case "preparando":
-        return "bg-amber-50 text-amber-700 border-amber-100";
-      case "en_camino":
-        return "bg-blue-50 text-blue-700 border-blue-100";
-      case "entregado":
-        return "bg-emerald-50 text-emerald-700 border-emerald-100";
-      default:
-        return "bg-gray-50 text-gray-400";
-    }
-  };
-
-  if (loading)
-    return (
-      <div className="p-20 text-center">
-        <Loader2 className="animate-spin mx-auto" />
-      </div>
-    );
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#FBFBFB]">
+      <Loader2 className="animate-spin text-black" size={40} />
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-[#FBFBFB] text-black p-6 md:p-10">
+    <div className="min-h-screen bg-[#FBFBFB] text-black p-6 md:p-10 font-sans">
       <div className="max-w-7xl mx-auto">
-        {/* Título */}
+        {/* HEADER */}
         <div className="mb-12">
           <div className="flex items-center gap-2 mb-2 text-gray-400 font-bold text-[10px] uppercase tracking-[0.3em]">
-            <Activity size={14} className="text-black" />
-            Consola de Operaciones
+            <Activity size={14} className="text-black" /> Consola de Operaciones
           </div>
           <h1 className="text-4xl font-black tracking-tighter uppercase">
             Logística <span className="font-light italic text-gray-500">DAC Center</span>
           </h1>
         </div>
 
-        {/* Métricas principales */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-          <MetricCard icon={<Clock size={20} />} label="Preparando" value={pedidosPorEstado.preparando} />
-          <MetricCard icon={<Truck size={20} />} label="En Camino" value={pedidosPorEstado.en_camino} />
-          <MetricCard icon={<CheckCircle size={20} />} label="Entregados" value={pedidosPorEstado.entregado} />
-          <MetricCard icon={<TrendingUp size={20} />} label="Ventas Hoy" value={`$${ingresosHoy.toLocaleString("es-AR")}`} />
-          <MetricCard icon={<TrendingUp size={20} />} label="Ingresos Totales" value={`$${ingresosTotales.toLocaleString("es-AR")}`} />
+        {/* MÉTRICAS RÁPIDAS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <MetricCard icon={<Package size={20} />} label="Pedidos Totales" value={pedidos.length} />
+          <MetricCard icon={<TrendingUp size={20} />} label="Ingresos Brutos" value={`$${ingresosTotales.toLocaleString("es-AR")}`} />
+          <MetricCard icon={<CheckCircle size={20} />} label="Unidades Salientes" value={totalArticulosVendidos} />
         </div>
 
-        {/* Tabla de pedidos */}
-        <SectionTable data={data} getStatusStyle={getStatusStyle} />
+        <div className="mb-6 flex items-center gap-2">
+          <Clock size={18} className="text-gray-400" />
+          <h2 className="text-xs font-black uppercase tracking-[0.2em]">Últimos Movimientos</h2>
+        </div>
 
-        {/* Tabla de productos agrupados */}
-        <SectionProductStats data={productosAgrupados} />
+        <div className="bg-white border border-gray-100 shadow-sm overflow-x-auto mb-16 rounded-sm">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead className="text-[10px] uppercase tracking-widest text-gray-400 bg-gray-50/50">
+              <tr>
+                <th className="px-6 py-4 border-b border-gray-100">ID / Fecha</th>
+                <th className="px-6 py-4 border-b border-gray-100">Cliente y Contacto</th>
+                <th className="px-6 py-4 border-b border-gray-100">Productos y Requerimientos</th>
+                <th className="px-6 py-4 border-b border-gray-100">Total</th>
+                <th className="px-6 py-4 border-b border-gray-100 text-right">Estado</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {pedidos.map((p) => (
+                <tr key={p.pedido_id} className="hover:bg-gray-50/30 transition-colors align-top">
+                  <td className="px-6 py-6 font-bold">
+                    <span className="text-black">#{p.pedido_id}</span>
+                    <br/>
+                    <span className="text-[10px] text-gray-400 font-medium">
+                      {new Date(p.fecha_envio).toLocaleDateString('es-AR')}
+                    </span>
+                  </td>
+
+                  {/* COLUMNA DE CLIENTE ACTUALIZADA PARA DESPACHOS */}
+                  <td className="px-6 py-6 min-w-[250px]">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2 font-black text-[13px] uppercase tracking-tight">
+                        <User size={14} className="text-blue-600" /> {p.envio.nombre} {p.envio.apellido}
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] font-bold text-gray-600">
+                        <CreditCard size={13} className="text-gray-400" /> DNI: {p.envio.documento}
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] font-bold text-gray-600">
+                        <Phone size={13} className="text-gray-400" /> {p.envio.telefono}
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] font-medium text-gray-500 lowercase">
+                        <Mail size={13} className="text-gray-400" /> {p.envio.email}
+                      </div>
+                      <div className="mt-2 text-[10px] bg-gray-50 p-2 border border-gray-100 rounded-sm italic text-gray-500 leading-tight">
+                        {p.envio.direccion}, {p.envio.ciudad} <br/> <strong>{p.envio.provincia}</strong>
+                      </div>
+                    </div>
+                  </td>
+
+                  <td className="px-6 py-6 min-w-[320px]">
+                    {p.productos.map((prod, i) => (
+                      <div key={i} className="mb-4 last:mb-0">
+                        <div className="flex justify-between items-start">
+                          <span className="font-black uppercase text-[11px] tracking-tight text-gray-800">
+                            {prod.nombre_producto} 
+                            <span className="text-blue-600 ml-2 bg-blue-50 px-1.5 py-0.5 rounded">x{prod.cantidad}</span>
+                          </span>
+                        </div>
+                        {prod.personalizacion ? (
+                          <div className="mt-2 bg-amber-50 border-l-4 border-amber-500 p-3 shadow-sm rounded-r-sm">
+                            <p className="text-[9px] font-black uppercase text-amber-600 tracking-widest mb-1 flex items-center gap-1">
+                              <Activity size={10} /> Requerimiento del Cliente:
+                            </p>
+                            <p className="text-[12px] font-bold text-amber-900 italic leading-snug">
+                              "{prod.personalizacion}"
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="mt-1 text-[10px] text-gray-300 italic">Sin notas.</div>
+                        )}
+                      </div>
+                    ))}
+                  </td>
+
+                  <td className="px-6 py-6 font-black text-base text-black">
+                    ${Number(p.total_pedido).toLocaleString("es-AR")}
+                  </td>
+
+                  <td className="px-6 py-6 text-right">
+                    <span className={`text-[9px] px-3 py-1.5 border-2 font-black uppercase rounded-full ${
+                      p.estado_pago === "pagado" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"
+                    }`}>
+                      {p.estado_pago}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+           <SectionProductStats title="Performance de Combos" icon={<Layers size={16}/>} data={statsSeparadas.listadoCombos} color="amber" />
+           <SectionProductStats title="Productos Individuales" icon={<Tag size={16}/>} data={statsSeparadas.listadoNormales} color="blue" />
+        </div>
       </div>
     </div>
   );
 }
-
-// --------------------- COMPONENTES ---------------------
 
 function MetricCard({ icon, label, value }: any) {
   return (
-    <div className="bg-white p-6 border border-gray-100 shadow-sm flex flex-col items-start">
-      <div className="mb-2">{icon}</div>
-      <h3 className="text-xs text-gray-400 uppercase tracking-widest">{label}</h3>
-      <p className="text-2xl font-black">{value}</p>
+    <div className="bg-white p-6 border border-gray-100 shadow-sm flex flex-col items-start transition-transform hover:scale-[1.01]">
+      <div className="mb-2 text-black">{icon}</div>
+      <h3 className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">{label}</h3>
+      <p className="text-2xl font-black mt-1 tracking-tighter">{value}</p>
     </div>
   );
 }
 
-function SectionTable({ data, getStatusStyle }: any) {
+function SectionProductStats({ title, icon, data, color }: any) {
+  const accent = color === "amber" ? "text-amber-600" : "text-blue-600";
   return (
-    <div className="bg-white border border-gray-100 shadow-sm overflow-x-auto mb-16">
-      <div className="p-8 border-b border-gray-50">
-        <h2 className="font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2">
-          <Package size={16} /> Pedidos
+    <div className="bg-white border border-gray-100 shadow-sm overflow-hidden rounded-sm">
+      <div className="p-6 border-b border-gray-50 bg-gray-50/30">
+        <h2 className={`font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2 ${accent}`}>
+          {icon} {title}
         </h2>
       </div>
-
       <table className="w-full text-left text-sm">
-        <thead className="text-[10px] uppercase tracking-widest text-gray-400 bg-gray-50">
+        <thead className="text-[9px] uppercase tracking-widest text-gray-400 bg-white">
           <tr>
-            <th className="px-6 py-4">Cliente</th>
-            <th className="px-6 py-4">Datos de Envío</th>
-            <th className="px-6 py-4">Productos</th>
-            <th className="px-6 py-4">Total</th>
-            <th className="px-6 py-4">Estado</th>
+            <th className="px-6 py-3">Nombre</th>
+            <th className="px-6 py-3">Vendidos</th>
+            <th className="px-6 py-3 text-right">Recaudado</th>
           </tr>
         </thead>
-
-        <tbody className="divide-y divide-gray-100">
-          {data.map((pedido: DashboardData, idx: number) => (
-            <tr key={idx}>
-              <td className="px-6 py-6 font-bold uppercase text-sm">
-                {pedido.envio?.nombre ?? "-"} {pedido.envio?.apellido ?? ""}
-                <div className="text-[11px] text-gray-500">DNI: {pedido.envio?.documento ?? "-"}</div>
-                <div className="text-[11px] text-gray-400">{pedido.envio?.email ?? "-"}</div>
-              </td>
-
-              <td className="px-6 py-6 text-[11px]">
-                <div className="flex flex-col gap-1">
-                  <span><strong>Tel:</strong> {pedido.envio?.telefono ?? "-"}</span>
-                  <span><strong>Dirección:</strong> {pedido.envio?.direccion ?? "-"}</span>
-                  <span>{pedido.envio?.ciudad ?? "-"}, {pedido.envio?.provincia ?? "-"}</span>
-                  <span><strong>CP:</strong> {pedido.envio?.codigo_postal ?? "-"}</span>
-                </div>
-              </td>
-
-              <td className="px-6 py-6 text-[11px]">
-                {pedido.productos.map((p: Producto) => (
-                  <div key={p.producto_id} className="flex justify-between">
-                    <span>{p.nombre_producto} x{p.cantidad}</span>
-                    <span>${Number(p.subtotal).toLocaleString("es-AR")}</span>
-                  </div>
-                ))}
-              </td>
-
-              <td className="px-6 py-6 font-black">
-                ${Number(pedido.total_pedido).toLocaleString("es-AR")}
-              </td>
-
-              <td className="px-6 py-6">
-                <span className={`text-[10px] px-3 py-1 border rounded ${getStatusStyle(pedido.envio?.envio_estado ?? "preparando")}`}>
-                  {pedido.envio?.envio_estado ?? "preparando"}
-                </span>
-              </td>
+        <tbody className="divide-y divide-gray-50">
+          {data.length > 0 ? data.map((item: any, idx: number) => (
+            <tr key={idx} className="hover:bg-gray-50/30">
+              <td className="px-6 py-4 font-bold uppercase text-[11px] leading-tight text-gray-700">{item.nombre}</td>
+              <td className="px-6 py-4 font-medium">{item.unidades}</td>
+              <td className="px-6 py-4 font-black text-gray-600 text-right">${item.total.toLocaleString("es-AR")}</td>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function SectionProductStats({ data }: any) {
-  return (
-    <div className="bg-white border border-gray-100 shadow-sm overflow-x-auto mb-16">
-      <div className="p-8 border-b border-gray-50">
-        <h2 className="font-black text-xs uppercase tracking-[0.2em] flex items-center gap-2">
-          <Package size={16} /> Productos Agrupados (Top vendidos)
-        </h2>
-      </div>
-
-      <table className="w-full text-left text-sm">
-        <thead className="text-[10px] uppercase tracking-widest text-gray-400 bg-gray-50">
-          <tr>
-            <th className="px-6 py-4">Producto</th>
-            <th className="px-6 py-4">Unidades Vendidas</th>
-            <th className="px-6 py-4">Total Generado</th>
-          </tr>
-        </thead>
-
-        <tbody className="divide-y divide-gray-100">
-          {data.map((item: any, idx: number) => (
-            <tr key={idx}>
-              <td className="px-6 py-6 font-bold">{item.nombre}</td>
-              <td className="px-6 py-6">{item.unidades}</td>
-              <td className="px-6 py-6 font-black">${Number(item.total).toLocaleString("es-AR")}</td>
-            </tr>
-          ))}
+          )) : (
+            <tr><td colSpan={3} className="px-6 py-10 text-center text-gray-300 italic text-xs">No hay datos.</td></tr>
+          )}
         </tbody>
       </table>
     </div>

@@ -55,11 +55,10 @@ export const createProductService = async (
 
 export const getProductsService = async (): Promise<Producto[]> => {
   const [rows] = await db.query<ProductoRow[]>(
-    "SELECT * FROM productos"
+    "SELECT * FROM productos ORDER BY prioridad DESC, producto ASC"
   );
   return rows;
 };
-
 export const getProductsByIdService = async (
   id: number
 ): Promise<Producto> => {

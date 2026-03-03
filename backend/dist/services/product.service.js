@@ -30,7 +30,7 @@ const createProductService = async (product) => {
 };
 exports.createProductService = createProductService;
 const getProductsService = async () => {
-    const [rows] = await db_1.default.query("SELECT * FROM productos");
+    const [rows] = await db_1.default.query("SELECT * FROM productos ORDER BY prioridad DESC, producto ASC");
     return rows;
 };
 exports.getProductsService = getProductsService;

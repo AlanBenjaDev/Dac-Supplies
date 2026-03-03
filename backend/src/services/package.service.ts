@@ -1,71 +1,76 @@
 import db from "../config/db";
+
 export const dashboardService = async () => {
   const [rows] = await db.query(`
-    SELECT
-      e.id AS envio_id,
-      e.tipo_envio,
-      e.nombre,
+    SELECT 
+      -- DATOS DEL PEDIDO
+      p.id AS pedido_id,
+      p.total AS total_pedido,
+      p.estado AS estado_pago,
+      p.created_at AS fecha,
+
+      -- DATOS del ENVÍO / CLIENTE
+      e.nombre AS cliente,
       e.apellido,
+      e.email,
       e.documento,
       e.telefono,
       e.provincia,
       e.ciudad,
       e.direccion,
-      e.email,
       e.codigo_postal,
+      e.tipo_envio,
       e.estado AS envio_estado,
-      e.created_at AS fecha_envio,
 
-      ped.id AS pedido_id,
-      ped.total AS total_pedido,
-      ped.estado AS estado_pedido,
-
+      -- DATOS DEL PRODUCTO Y PERSONALIZACIÓN
       pd.producto_id,
-      prod.producto AS nombre_producto,
+      prod.producto AS articulo,
       pd.cantidad,
       pd.precio_unitario,
-      (pd.cantidad * pd.precio_unitario) AS monto_producto
+      pd.opciones_texto AS personalizacion,
+      (pd.cantidad * pd.precio_unitario) AS subtotal_producto
 
-    FROM envios e
-    JOIN pedidos ped ON ped.id = e.pedido_id
-    JOIN pedido_detalle pd ON pd.pedido_id = ped.id
-    JOIN productos prod ON prod.id = pd.producto_id
-    ORDER BY e.created_at DESC;
+    FROM pedidos p
+    JOIN envios e ON p.id = e.pedido_id
+    JOIN pedido_detalle pd ON p.id = pd.pedido_id
+    JOIN productos prod ON pd.producto_id = prod.id
+    ORDER BY p.created_at DESC;
   `);
 
-  const formatted: any = {};
+  const formatted: Record<number, any> = {};
 
   for (const row of rows as any[]) {
+    // Si el pedido no existe en nuestro objeto, lo creamos
     if (!formatted[row.pedido_id]) {
       formatted[row.pedido_id] = {
         pedido_id: row.pedido_id,
         total_pedido: row.total_pedido,
-        estado_pedido: row.estado_pedido,
-        fecha_envio: row.fecha_envio,
+        estado_pago: row.estado_pago, // Cambiado para matchear el Frontend
+        fecha_envio: row.fecha,
         envio: {
-          envio_id: row.envio_id,
-          tipo_envio: row.tipo_envio,
-          nombre: row.nombre,
+          nombre: row.cliente, // La query ahora lo llama 'cliente'
           apellido: row.apellido,
           documento: row.documento,
           telefono: row.telefono,
+          email: row.email,
           provincia: row.provincia,
           ciudad: row.ciudad,
           direccion: row.direccion,
-          email: row.email,
           codigo_postal: row.codigo_postal,
-          envio_estado: row.envio_estado,
+          tipo_envio: row.tipo_envio,
+          envio_estado: row.envio_estado
         },
         productos: [],
       };
     }
 
+    // Agregamos el producto al array de productos del pedido
     formatted[row.pedido_id].productos.push({
-      producto_id: row.producto_id,
-      nombre_producto: row.nombre_producto,
+      nombre_producto: row.articulo, // 'articulo' en SQL -> 'nombre_producto' en Frontend
       cantidad: row.cantidad,
       precio_unitario: row.precio_unitario,
-      subtotal: row.monto_producto,
+      subtotal: row.subtotal_producto,
+      personalizacion: row.personalizacion // La nota de texto del cliente
     });
   }
 
