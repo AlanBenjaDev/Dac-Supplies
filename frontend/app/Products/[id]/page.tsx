@@ -238,8 +238,9 @@ export default function ProductDetail() {
                 </p>
               </div>
               <div className="p-1 bg-white border border-gray-100 rounded-sm">
-                <Wallet initialization={{ preferenceId }} customization={{ texts: { valueProp: 'smart_option' } }} />
-              </div>
+  <Wallet initialization={{ preferenceId }} />
+</div>
+             
             </div>
           )}
 
