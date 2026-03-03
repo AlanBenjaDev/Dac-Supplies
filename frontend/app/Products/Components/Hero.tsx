@@ -13,16 +13,17 @@ import { Navigation, Pagination, Mousewheel, Keyboard, Autoplay } from 'swiper/m
 export default function Hero() {
   const slides = [
     { 
+      src: "/banner-productos.png", 
+      title: "COMPRÁ EL MEJOR", 
+      highlight: "COMBO DE ENTRENAMIENTO COMPLETO", 
+      desc: "Suplementos de grado profesional para atletas exigentes." 
+    },
+    { 
       src: "/Dac-Protein-creatine.jpg", 
       title: "MEJORÁ TU", 
       highlight: "RECUPERACIÓN", 
       desc: "Suplementos de grado profesional para atletas exigentes." 
-    },
-    { 
-      src: "/Dac-protein.jpg", 
-      title: "BIENESTAR &", 
-      highlight: "VITALIDAD", 
-      desc: "Vitaminas y minerales diseñados para tu equilibrio diario." 
+ 
     },
     { 
       src: "/Drink-dac-workout.jpg", 

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { initMercadoPago, Wallet } from "@mercadopago/sdk-react";
-import { ShoppingCart, ShieldCheck, Truck, ArrowLeft, CheckCircle2, Activity, Info, Star } from "lucide-react";
+import { ShoppingCart, ShieldCheck, Truck, ArrowLeft, CheckCircle2, Activity, Info, Star, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 interface Product {
@@ -75,16 +75,17 @@ export default function ProductDetail() {
 
   const componentesDetectados = detectarComponentes();
 
-  // ESTA ES LA ACLARACIÓN DINÁMICA QUE ME PEDISTE
+  // SIMPLIFICACIÓN TOTAL DE LA ACLARACIÓN
   const obtenerAclaracionNotas = () => {
-    if (isBidon) return "Aclará aquí si tenés alguna preferencia de entrega o detalle del color.";
-    if (isCombo) return "Podés detallar aquí sabores específicos o si querés cambiar algún componente (sujeto a stock).";
-    return "Aclará aquí el sabor, color o detalles específicos de tu pedido.";
+    if (isBidon) return "Ej: Color Azul, prefiero entrega por la tarde...";
+    if (isCombo) return "Ej: Proteína de Chocolate, Creatina de Uva...";
+    return "Escribí acá los sabores o colores de tu pedido...";
   };
 
   const handleCreatePreference = async () => {
-    if (!envio.nombre || !envio.direccion || !envio.telefono) {
-      toast.error("Completá los datos de despacho");
+    const { nombre, apellido, documento, direccion, telefono, email, provincia, codigo_postal } = envio;
+    if (!nombre || !apellido || !documento || !direccion || !telefono || !email || !provincia || !codigo_postal) {
+      toast.error("Por favor, completá todos los datos de despacho");
       return;
     }
 
@@ -95,7 +96,6 @@ export default function ProductDetail() {
         .map(([key, val]) => `${key}: ${val}`)
         .join(", ");
     }
-
     if (notasExtra) info_adicional += (info_adicional ? " | " : "") + `Notas: ${notasExtra}`;
 
     try {
@@ -122,7 +122,7 @@ export default function ProductDetail() {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center animate-pulse">Cargando...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center animate-pulse text-xs font-bold uppercase tracking-widest">Cargando producto...</div>;
   if (!product) return <div>Producto no encontrado</div>;
 
   return (
@@ -142,6 +142,7 @@ export default function ProductDetail() {
           <h1 className="text-5xl font-black mb-4 uppercase tracking-tighter leading-none">{product.producto}</h1>
           <p className="text-3xl font-light mb-8">${Number(product.precio).toLocaleString("es-AR")}</p>
 
+          {/* OPCIONES DE PRODUCTO */}
           {isBidon && (
             <div className="mb-8">
               <h3 className="text-xs font-bold uppercase mb-3 text-gray-400 tracking-widest">Seleccionar Color</h3>
@@ -176,47 +177,76 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* SECCIÓN DE NOTAS CON ACLARACIÓN (LO QUE PEDISTE) */}
+          {/* NOTAS SIMPLIFICADAS */}
           <div className="mb-8">
-            <div className="flex justify-between items-end mb-1">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Notas del pedido</label>
-              <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-tighter">
-                {isCombo ? "Sabor de Proteína / Creatina" : isBidon ? "Color del Bidón" : "Preferencia de Sabor/Color"}
-              </span>
+            <div className="flex justify-between items-center mb-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Notas del pedido</label>
+                <span className="text-[9px] bg-black text-white px-2 py-0.5 font-bold uppercase">¡Escribí acá tus sabores!</span>
             </div>
             <textarea 
-              className="w-full bg-gray-50 border border-gray-100 p-4 text-sm outline-none rounded-sm min-h-[100px] focus:bg-white focus:border-black transition-all"
+              className="w-full bg-gray-50 border border-gray-100 p-4 text-sm outline-none rounded-sm min-h-[80px] focus:bg-white focus:border-black transition-all"
               placeholder={obtenerAclaracionNotas()}
               onChange={(e) => setNotasExtra(e.target.value)}
             />
-            <p className="text-[9px] text-gray-400 mt-2 uppercase leading-relaxed">
-              * Si olvidaste seleccionar arriba, podés escribir el <b>sabor de la proteína, color de bidón o sabor de creatina</b> aquí mismo.
-            </p>
           </div>
 
+          {/* FORMULARIO DE ENVÍO */}
           <div className="bg-white border border-gray-100 p-8 mb-8 shadow-sm rounded-sm">
-             <h3 className="text-[11px] font-bold uppercase mb-6 flex items-center gap-2"><Truck size={16}/> Datos de Entrega</h3>
-             <div className="grid grid-cols-2 gap-4 mb-4">
-                <input type="text" placeholder="Nombre" className="bg-gray-50 p-4 text-sm outline-none focus:bg-white" onChange={(e) => setEnvio({...envio, nombre: e.target.value})} />
-                <input type="text" placeholder="Apellido" className="bg-gray-50 p-4 text-sm outline-none focus:bg-white" onChange={(e) => setEnvio({...envio, apellido: e.target.value})} />
+             <h3 className="text-[11px] font-bold uppercase mb-6 flex items-center gap-2"><Truck size={16}/> Información de Despacho</h3>
+             <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <input type="text" placeholder="Nombre" className="bg-gray-50 p-4 text-sm outline-none focus:bg-white" onChange={(e) => setEnvio({...envio, nombre: e.target.value})} />
+                    <input type="text" placeholder="Apellido" className="bg-gray-50 p-4 text-sm outline-none focus:bg-white" onChange={(e) => setEnvio({...envio, apellido: e.target.value})} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <input type="text" placeholder="DNI / CUIT" className="bg-gray-50 p-4 text-sm outline-none focus:bg-white" onChange={(e) => setEnvio({...envio, documento: e.target.value})} />
+                    <input type="email" placeholder="Email" className="bg-gray-50 p-4 text-sm outline-none focus:bg-white" onChange={(e) => setEnvio({...envio, email: e.target.value})} />
+                </div>
+                <input type="text" placeholder="Dirección y Altura" className="w-full bg-gray-50 p-4 text-sm outline-none focus:bg-white" onChange={(e) => setEnvio({...envio, direccion: e.target.value})} />
+                <div className="grid grid-cols-2 gap-4">
+                    <input type="text" placeholder="Ciudad" className="bg-gray-50 p-4 text-sm outline-none focus:bg-white" onChange={(e) => setEnvio({...envio, ciudad: e.target.value})} />
+                    <input type="text" placeholder="Provincia" className="bg-gray-50 p-4 text-sm outline-none focus:bg-white" onChange={(e) => setEnvio({...envio, provincia: e.target.value})} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <input type="text" placeholder="Código Postal" className="bg-gray-50 p-4 text-sm outline-none focus:bg-white" onChange={(e) => setEnvio({...envio, codigo_postal: e.target.value})} />
+                    <input type="text" placeholder="Teléfono" className="bg-gray-50 p-4 text-sm outline-none focus:bg-white" onChange={(e) => setEnvio({...envio, telefono: e.target.value})} />
+                </div>
              </div>
-             <input type="text" placeholder="Dirección y Altura" className="w-full bg-gray-50 p-4 text-sm outline-none mb-4 focus:bg-white" onChange={(e) => setEnvio({...envio, direccion: e.target.value})} />
-             <input type="text" placeholder="Teléfono de contacto" className="w-full bg-gray-50 p-4 text-sm outline-none focus:bg-white" onChange={(e) => setEnvio({...envio, telefono: e.target.value})} />
           </div>
 
-          <button 
-            onClick={handleCreatePreference} 
-            disabled={creatingPreference}
-            className="w-full bg-[#009ee3] text-white font-bold py-5 uppercase text-sm tracking-widest hover:brightness-110 transition-all disabled:opacity-50 shadow-lg shadow-blue-100"
-          >
-            {creatingPreference ? "Procesando..." : "Finalizar Compra"}
-          </button>
-
-          {preferenceId && (
-            <div className="mt-6 border-t pt-6 animate-in fade-in duration-500">
-              <Wallet initialization={{ preferenceId }} />
+          {!preferenceId ? (
+            <button 
+              onClick={handleCreatePreference} 
+              disabled={creatingPreference}
+              className="w-full bg-[#009ee3] text-white font-bold py-5 uppercase text-sm tracking-widest hover:brightness-110 transition-all disabled:opacity-50 shadow-lg shadow-blue-100 flex items-center justify-center gap-3"
+            >
+              {creatingPreference ? (
+                <>
+                  <Loader2 className="animate-spin" size={20} />
+                  Generando Orden...
+                </>
+              ) : (
+                "Finalizar Compra"
+              )}
+            </button>
+          ) : (
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <div className="bg-blue-50 border border-blue-100 p-4 rounded-sm flex items-center gap-3">
+                <Loader2 className="animate-spin text-[#009ee3]" size={18} />
+                <p className="text-[11px] font-bold uppercase text-[#009ee3] tracking-wider">
+                  Se está cargando Mercado Pago...
+                </p>
+              </div>
+              <div className="p-1 bg-white border border-gray-100 rounded-sm">
+                <Wallet initialization={{ preferenceId }} customization={{ texts: { valueProp: 'smart_option' } }} />
+              </div>
             </div>
           )}
+
+          <div className="mt-8 flex items-center justify-center gap-6 opacity-30 grayscale">
+            <ShieldCheck size={20} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">Pago 100% Seguro</span>
+          </div>
         </div>
       </div>
     </main>
